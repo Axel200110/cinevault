@@ -15,13 +15,13 @@ export async function fetchTmdbPreview(tmdbId: string, type: 'movie' | 'tv') {
 export async function searchTmdb(query: string, type: 'movie' | 'tv') {
   if (!query || query.length < 2) return [];
   
-  const TMDB_API_KEY = process.env.TMDB_API_KEY;
+  const NEXT_PUBLIC_TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
   const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
   const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w92';
   
   try {
     const endpoint = type === 'movie' ? 'search/movie' : 'search/tv';
-    const response = await fetch(`${TMDB_BASE_URL}/${endpoint}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1`);
+    const response = await fetch(`${TMDB_BASE_URL}/${endpoint}?api_key=${NEXT_PUBLIC_TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1`);
     
     if (!response.ok) return [];
     
@@ -40,12 +40,12 @@ export async function searchTmdb(query: string, type: 'movie' | 'tv') {
 export async function searchMultiAction(query: string) {
   if (!query || query.length < 1) return { results: [] };
   
-  const TMDB_API_KEY = process.env.TMDB_API_KEY;
+  const NEXT_PUBLIC_TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
   const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
   
   try {
     const response = await fetch(
-      `${TMDB_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&language=en-US&query=${encodeURIComponent(query)}&page=1&include_adult=false`
+      `${TMDB_BASE_URL}/search/multi?api_key=${NEXT_PUBLIC_TMDB_API_KEY}&language=en-US&query=${encodeURIComponent(query)}&page=1&include_adult=false`
     );
     
     if (!response.ok) return { results: [] };
@@ -120,7 +120,7 @@ export async function incrementClickCount(tmdbId: string) {
 
 // 4. Batch Fetch Titles for Analytics
 export async function fetchTitlesForAnalytics(movies: any[]) {
-  const TMDB_API_KEY = process.env.TMDB_API_KEY;
+  const NEXT_PUBLIC_TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
   const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
   
   const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
@@ -128,7 +128,7 @@ export async function fetchTitlesForAnalytics(movies: any[]) {
   const results = await Promise.all(movies.map(async (m) => {
     try {
       const endpoint = m.type === 'movie' ? 'movie' : 'tv';
-      const response = await fetch(`${TMDB_BASE_URL}/${endpoint}/${m.tmdb_id}?api_key=${TMDB_API_KEY}&language=en-US`);
+      const response = await fetch(`${TMDB_BASE_URL}/${endpoint}/${m.tmdb_id}?api_key=${NEXT_PUBLIC_TMDB_API_KEY}&language=en-US`);
       if (response.ok) {
         const data = await response.json();
         return { 
@@ -181,16 +181,16 @@ export async function deleteComment(commentId: string) {
 }
 // 8. Fetch TV Show Episodes for Wizard
 export async function fetchTvDetails(tmdbId: string, season: number = 1) {
-  const TMDB_API_KEY = process.env.TMDB_API_KEY;
+  const NEXT_PUBLIC_TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
   const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
   
   try {
-    const response = await fetch(`${TMDB_BASE_URL}/tv/${tmdbId}?api_key=${TMDB_API_KEY}&language=en-US`);
+    const response = await fetch(`${TMDB_BASE_URL}/tv/${tmdbId}?api_key=${NEXT_PUBLIC_TMDB_API_KEY}&language=en-US`);
     if (!response.ok) return null;
     const data = await response.json();
     
     // Fetch episodes for requested season
-    const sResponse = await fetch(`${TMDB_BASE_URL}/tv/${tmdbId}/season/${season}?api_key=${TMDB_API_KEY}&language=en-US`);
+    const sResponse = await fetch(`${TMDB_BASE_URL}/tv/${tmdbId}/season/${season}?api_key=${NEXT_PUBLIC_TMDB_API_KEY}&language=en-US`);
     let episodes = [];
     if (sResponse.ok) {
       const sData = await sResponse.json();
