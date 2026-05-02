@@ -23,8 +23,9 @@ export async function getMovieDetails(
   type: 'movie' | 'tv' = 'movie'
 ): Promise<MovieDetails | null> {
   try {
+    const sanitizedId = tmdbId.split('-')[0];
     const endpoint = type === 'movie' ? 'movie' : 'tv';
-    const response = await fetch(`${TMDB_BASE_URL}/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}&language=en-US`);
+    const response = await fetch(`${TMDB_BASE_URL}/${endpoint}/${sanitizedId}?api_key=${TMDB_API_KEY}&language=en-US`);
     
     if (!response.ok) {
       return null;
@@ -97,10 +98,11 @@ export async function getExtendedMovieDetails(
   teraboxLink: string = '#'
 ): Promise<ExtendedMovieDetails | null> {
   try {
+    const sanitizedId = tmdbId.split('-')[0];
     const endpoint = type === 'movie' ? 'movie' : 'tv';
     // Append credits, videos, and similar
     // Fetch with multiple video language fallbacks (critical for regional/Indian cinema)
-    const response = await fetch(`${TMDB_BASE_URL}/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}&language=en-US&append_to_response=credits,videos,similar&include_video_language=en,hi,ta,te,kn,ml,null`);
+    const response = await fetch(`${TMDB_BASE_URL}/${endpoint}/${sanitizedId}?api_key=${TMDB_API_KEY}&language=en-US&append_to_response=credits,videos,similar&include_video_language=en,hi,ta,te,kn,ml,null`);
     
     if (!response.ok) {
       return null;
