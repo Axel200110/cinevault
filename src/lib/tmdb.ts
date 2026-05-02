@@ -21,12 +21,12 @@ export async function getMovieDetails(
   teraboxLink: string,
   type: 'movie' | 'tv' = 'movie'
 ): Promise<MovieDetails | null> {
-  const NEXT_PUBLIC_TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
-  if (!NEXT_PUBLIC_TMDB_API_KEY) { console.error('NEXT_PUBLIC_TMDB_API_KEY is missing!'); return null; }
+  const TMDB_API_KEY = process.env.TMDB_API_KEY;
+  if (!TMDB_API_KEY) { console.error('TMDB_API_KEY is missing!'); return null; }
   try {
     const sanitizedId = tmdbId.split('-')[0];
     const endpoint = type === 'movie' ? 'movie' : 'tv';
-    const response = await fetch(`${TMDB_BASE_URL}/${endpoint}/${sanitizedId}?api_key=${NEXT_PUBLIC_TMDB_API_KEY}&language=en-US`);
+    const response = await fetch(`${TMDB_BASE_URL}/${endpoint}/${sanitizedId}?api_key=${TMDB_API_KEY}&language=en-US`);
 
     if (!response.ok) return null;
 
@@ -52,10 +52,10 @@ export async function getMovieDetails(
 }
 
 export async function getTrending(): Promise<MovieDetails[]> {
-  const NEXT_PUBLIC_TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
-  if (!NEXT_PUBLIC_TMDB_API_KEY) return [];
+  const TMDB_API_KEY = process.env.TMDB_API_KEY;
+  if (!TMDB_API_KEY) return [];
   try {
-    const response = await fetch(`${TMDB_BASE_URL}/trending/all/day?api_key=${NEXT_PUBLIC_TMDB_API_KEY}&language=en-US`);
+    const response = await fetch(`${TMDB_BASE_URL}/trending/all/day?api_key=${TMDB_API_KEY}&language=en-US`);
 
     if (!response.ok) return [];
 
@@ -97,13 +97,13 @@ export async function getExtendedMovieDetails(
   type: 'movie' | 'tv' = 'movie',
   teraboxLink: string = '#'
 ): Promise<ExtendedMovieDetails | null> {
-  const NEXT_PUBLIC_TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
-  if (!NEXT_PUBLIC_TMDB_API_KEY) { console.error('NEXT_PUBLIC_TMDB_API_KEY is missing in getExtendedMovieDetails!'); return null; }
+  const TMDB_API_KEY = process.env.TMDB_API_KEY;
+  if (!TMDB_API_KEY) { console.error('TMDB_API_KEY is missing in getExtendedMovieDetails!'); return null; }
   try {
     const sanitizedId = tmdbId.split('-')[0];
     const endpoint = type === 'movie' ? 'movie' : 'tv';
     const response = await fetch(
-      `${TMDB_BASE_URL}/${endpoint}/${sanitizedId}?api_key=${NEXT_PUBLIC_TMDB_API_KEY}&language=en-US&append_to_response=credits,videos,similar&include_video_language=en,hi,ta,te,kn,ml`
+      `${TMDB_BASE_URL}/${endpoint}/${sanitizedId}?api_key=${TMDB_API_KEY}&language=en-US&append_to_response=credits,videos,similar&include_video_language=en,hi,ta,te,kn,ml`
     );
 
     if (!response.ok) {
@@ -181,11 +181,11 @@ export async function getExtendedMovieDetails(
 }
 
 export async function searchMulti(query: string): Promise<any> {
-  const NEXT_PUBLIC_TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
-  if (!NEXT_PUBLIC_TMDB_API_KEY) return { results: [] };
+  const TMDB_API_KEY = process.env.TMDB_API_KEY;
+  if (!TMDB_API_KEY) return { results: [] };
   try {
     const response = await fetch(
-      `${TMDB_BASE_URL}/search/multi?api_key=${NEXT_PUBLIC_TMDB_API_KEY}&language=en-US&query=${encodeURIComponent(query)}&page=1&include_adult=false`
+      `${TMDB_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&language=en-US&query=${encodeURIComponent(query)}&page=1&include_adult=false`
     );
 
     if (!response.ok) return { results: [] };
@@ -198,10 +198,10 @@ export async function searchMulti(query: string): Promise<any> {
 }
 
 export async function getUpcoming(): Promise<MovieDetails[]> {
-  const NEXT_PUBLIC_TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
-  if (!NEXT_PUBLIC_TMDB_API_KEY) return [];
+  const TMDB_API_KEY = process.env.TMDB_API_KEY;
+  if (!TMDB_API_KEY) return [];
   try {
-    const response = await fetch(`${TMDB_BASE_URL}/movie/upcoming?api_key=${NEXT_PUBLIC_TMDB_API_KEY}&language=en-US&page=1`);
+    const response = await fetch(`${TMDB_BASE_URL}/movie/upcoming?api_key=${TMDB_API_KEY}&language=en-US&page=1`);
 
     if (!response.ok) return [];
 
