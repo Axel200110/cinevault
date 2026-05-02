@@ -18,15 +18,14 @@ export interface MovieDetails {
 }
 
 export async function getMovieDetails(
-  tmdbId: string, 
-  teraboxLink: string, 
+  tmdbId: string,
+  teraboxLink: string,
   type: 'movie' | 'tv' = 'movie'
 ): Promise<MovieDetails | null> {
   try {
-    const sanitizedId = tmdbId.split('-')[0];
     const endpoint = type === 'movie' ? 'movie' : 'tv';
-    const response = await fetch(`${TMDB_BASE_URL}/${endpoint}/${sanitizedId}?api_key=${TMDB_API_KEY}&language=en-US`);
-    
+    const response = await fetch(`${TMDB_BASE_URL}/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}&language=en-US`);
+
     if (!response.ok) {
       return null;
     }
@@ -56,7 +55,7 @@ export async function getMovieDetails(
 export async function getTrending(): Promise<MovieDetails[]> {
   try {
     const response = await fetch(`${TMDB_BASE_URL}/trending/all/day?api_key=${TMDB_API_KEY}&language=en-US`);
-    
+
     if (!response.ok) return [];
 
     const data = await response.json();
@@ -93,17 +92,16 @@ export interface ExtendedMovieDetails extends MovieDetails {
 }
 
 export async function getExtendedMovieDetails(
-  tmdbId: string, 
+  tmdbId: string,
   type: 'movie' | 'tv' = 'movie',
   teraboxLink: string = '#'
 ): Promise<ExtendedMovieDetails | null> {
   try {
-    const sanitizedId = tmdbId.split('-')[0];
     const endpoint = type === 'movie' ? 'movie' : 'tv';
     // Append credits, videos, and similar
     // Fetch with multiple video language fallbacks (critical for regional/Indian cinema)
-    const response = await fetch(`${TMDB_BASE_URL}/${endpoint}/${sanitizedId}?api_key=${TMDB_API_KEY}&language=en-US&append_to_response=credits,videos,similar&include_video_language=en,hi,ta,te,kn,ml,null`);
-    
+    const response = await fetch(`${TMDB_BASE_URL}/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}&language=en-US&append_to_response=credits,videos,similar&include_video_language=en,hi,ta,te,kn,ml`);
+
     if (!response.ok) {
       return null;
     }
@@ -126,12 +124,12 @@ export async function getExtendedMovieDetails(
 
     // Extract Trailer (YouTube) with multiple fallbacks
     const videos = data.videos?.results || [];
-    const trailer = 
-      videos.find((v: any) => v.site === 'YouTube' && v.type === 'Trailer') || 
+    const trailer =
+      videos.find((v: any) => v.site === 'YouTube' && v.type === 'Trailer') ||
       videos.find((v: any) => v.site === 'YouTube' && v.type === 'Teaser') ||
       videos.find((v: any) => v.site === 'YouTube' && v.type === 'Clip') ||
       videos.find((v: any) => v.site === 'YouTube');
-      
+
     const trailerKey = trailer?.key;
 
     // Extract Cast
@@ -186,9 +184,9 @@ export async function searchMulti(query: string): Promise<any> {
     const response = await fetch(
       `${TMDB_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&language=en-US&query=${encodeURIComponent(query)}&page=1&include_adult=false`
     );
-    
+
     if (!response.ok) return { results: [] };
-    
+
     return await response.json();
   } catch (error) {
     console.error("Search API Error:", error);
@@ -199,7 +197,7 @@ export async function searchMulti(query: string): Promise<any> {
 export async function getUpcoming(): Promise<MovieDetails[]> {
   try {
     const response = await fetch(`${TMDB_BASE_URL}/movie/upcoming?api_key=${TMDB_API_KEY}&language=en-US&page=1`);
-    
+
     if (!response.ok) return [];
 
     const data = await response.json();
