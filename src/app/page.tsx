@@ -4,7 +4,6 @@ import { supabase } from "@/lib/supabase";
 import { getMovieDetails, MovieDetails, getTrending, getUpcoming } from "@/lib/tmdb";
 import styles from "./page.module.css";
 import Link from "next/link";
-export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   // Fetch movie IDs and links from Supabase
@@ -46,9 +45,9 @@ export default async function Home() {
   // Most Popular (Top 5 by clicks) - already mostly sorted by movieSources order
   const popular = allContent.slice(0, 5);
 
-  // Dynamic Hero Backdrop (Picks a random trending movie)
-  const heroMovie = trending[Math.floor(Math.random() * Math.min(trending.length, 5))] || trending[0];
-  const heroBackdrop = heroMovie?.backdropUrl || "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?q=80&w=2070&auto=format&fit=crop";
+  // Professional Static Hero Backdrop (Migration 2023)
+  const heroBackdrop = "https://image.tmdb.org/t/p/original/gklkxY0veMajdCiGe6ggsh07VG2.jpg";
+  const heroMovie = trending[0]; 
 
   return (
     <main className={styles.main}>
