@@ -45,8 +45,9 @@ export default async function Home() {
   // Most Popular (Top 5 by clicks) - already mostly sorted by movieSources order
   const popular = allContent.slice(0, 5);
 
-  // Get a backdrop for the Hero (first trending item)
-  const heroBackdrop = trending[0]?.backdropUrl || "/hero-bg.jpg";
+  // Dynamic Hero Backdrop (Picks a random trending movie)
+  const heroMovie = trending[Math.floor(Math.random() * Math.min(trending.length, 5))] || trending[0];
+  const heroBackdrop = heroMovie?.backdropUrl || "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?q=80&w=2070&auto=format&fit=crop";
 
   return (
     <main className={styles.main}>
