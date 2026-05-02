@@ -1,66 +1,200 @@
-import Image from "next/image";
+import Navbar from "@/components/Navbar/Navbar";
+import MovieGrid from "@/components/MovieGrid/MovieGrid";
+import { supabase } from "@/lib/supabase";
+import { getMovieDetails, MovieDetails, getTrending, getUpcoming } from "@/lib/tmdb";
 import styles from "./page.module.css";
+import Link from "next/link";
 
-export default function Home() {
+export default async function Home() {
+  // Fetch movie IDs and links from Supabase
+  let { data: movieSources, error } = await supabase
+    .from('movies')
+    .select('*')
+    .order('clicks', { ascending: false });
+
+  // Fallback if 'clicks' column doesn't exist yet
+  if (error) {
+    console.warn('Click analytics column not found, falling back to date sort.');
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from('movies')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    movieSources = fallbackData;
+    if (fallbackError) console.error('Error fetching from Supabase:', fallbackError);
+  }
+
+  // Fetch all movie details from TMDb in parallel
+  const moviePromises = (movieSources || []).map(source =>
+    getMovieDetails(source.tmdb_id, source.terabox_link, source.type as 'movie' | 'tv')
+  );
+
+  const allMovieDetails = await Promise.all(moviePromises);
+  const allContent = allMovieDetails.filter((m): m is MovieDetails => m !== null);
+
+  // Categorize content
+  const movies = allContent.filter(c => c.type === 'movie');
+  const series = allContent.filter(c => c.type === 'tv');
+  const trending = await getTrending();
+  const upcoming = await getUpcoming();
+
+  // Get top rated for the lists
+  const topMovies = [...movies].sort((a, b) => b.rating - a.rating).slice(0, 10);
+  const topTV = [...series].sort((a, b) => b.rating - a.rating).slice(0, 10);
+
+  // Most Popular (Top 5 by clicks) - already mostly sorted by movieSources order
+  const popular = allContent.slice(0, 5);
+
+  // Get a backdrop for the Hero (first trending item)
+  const heroBackdrop = trending[0]?.backdropUrl || "/hero-bg.jpg";
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className={styles.main}>
+      <Navbar />
+
+      {/* Cinematic Background Glows */}
+      <div className={styles.globalGlow}></div>
+
+      {/* Hero Section with Backdrop Cover */}
+      <section
+        className={styles.hero}
+        style={{ backgroundImage: `url(${heroBackdrop})` }}
+      >
+        <div className={styles.heroOverlay}></div>
+        <div className={styles.heroContent}>
+          <h1 className={styles.heroTitle}>
+            Unlimited Movies, <br />
+            <span>Digital Vault.</span>
+          </h1>
+          <p className={styles.heroSubtitle}>
+            Experience the latest blockbusters and all-time classics in stunning quality.
+            All movies are enriched with TMDb data and hosted on high-speed Terabox servers.
           </p>
+          <div className={styles.heroActions}>
+            <a href="#library" className={styles.primaryBtn}>Explore Library</a>
+            <a href="#trending" className={styles.secondaryBtn}>Trending Now</a>
+          </div>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      </section>
+
+      <div className={styles.revealContent}>
+        {/* 1. Trending Now Horizontal Section */}
+        <section id="trending" className={styles.horizontalSection}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Trending Now</h2>
+            <div className={styles.divider}></div>
+          </div>
+          <div className={styles.horizontalScroll}>
+            {trending.map((item, index) => (
+              <Link href={`/title/${item.type}/${item.id}`} key={item.id} className={styles.trendingCard}>
+                <span className={styles.rankNumber}>{index + 1}</span>
+                <img
+                  src={item.posterUrl}
+                  alt={item.title}
+                  className={styles.trendingPoster}
+                />
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* 1.2 Coming Soon Section (Trending-Style) */}
+        {upcoming.length > 0 && (
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>🗓️ Coming Soon</h2>
+              <div className={styles.divider}></div>
+            </div>
+            
+            <div className={styles.horizontalScroll}>
+              {upcoming.map((item) => (
+                <div key={item.id} className={styles.trendingCard}>
+                  <div className={styles.dateBadge}>
+                    {item.fullReleaseDate ? new Date(item.fullReleaseDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Soon'}
+                  </div>
+                  <img
+                    src={item.posterUrl}
+                    alt={item.title}
+                    className={styles.trendingPoster}
+                  />
+                  <div className={styles.cardOverlay}>
+                    <p className={styles.cardTitle}>{item.title}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 1.5 Most Popular (Analytics-Driven) */}
+        {popular.length > 0 && (
+          <section className={styles.pageContent}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>🔥 Most Popular</h2>
+              <div className={styles.divider}></div>
+            </div>
+            <MovieGrid movies={popular} />
+          </section>
+        )}
+
+        {/* 2. All Movies Grid */}
+        <section id="library" className={styles.pageContent}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>All Movies</h2>
+            <div className={styles.divider}></div>
+          </div>
+          <MovieGrid movies={movies} />
+        </section>
+
+        {/* 3. TV Shows Grid */}
+        <section className={styles.pageContent}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>TV Shows</h2>
+            <div className={styles.divider}></div>
+          </div>
+          <MovieGrid movies={series} />
+        </section>
+
+        <section className={styles.topListsContainer}>
+          <div className={styles.topList}>
+            <h2 className={styles.sectionTitle}>Top Movies</h2>
+            <div className={styles.divider}></div>
+            <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              {topMovies.map((movie, index) => (
+                <Link href={`/title/movie/${movie.id}`} key={movie.id} className={styles.topItem}>
+                  <span className={styles.topRank}>{index + 1}</span>
+                  <img src={movie.posterUrl} alt={movie.title} className={styles.topPoster} />
+                  <div className={styles.topInfo}>
+                    <p className={styles.topTitle}>{movie.title}</p>
+                    <p className={styles.topRating}>⭐ {movie.rating}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.topList}>
+            <h2 className={styles.sectionTitle}>Top TV Shows</h2>
+            <div className={styles.divider}></div>
+            <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              {topTV.map((show, index) => (
+                <Link href={`/title/tv/${show.id}`} key={show.id} className={styles.topItem}>
+                  <span className={styles.topRank}>{index + 1}</span>
+                  <img src={show.posterUrl} alt={show.title} className={styles.topPoster} />
+                  <div className={styles.topInfo}>
+                    <p className={styles.topTitle}>{show.title}</p>
+                    <p className={styles.topRating}>⭐ {show.rating}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <footer className={styles.footer}>
+          <p>© {new Date().getFullYear()} CineVault Digital. All content is for demonstration purposes. TMDb API & Terabox Hosting.</p>
+        </footer>
+      </div>
+    </main>
   );
 }

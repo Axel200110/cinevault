@@ -1,0 +1,58 @@
+.bannerWrapper {
+  width: 100%;
+  padding: 10px 20px;
+  background: var(--background);
+  z-index: 40;
+  position: relative;
+}
+
+.banner {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: linear-gradient(90deg, rgba(225, 29, 72, 0.15) 0%, rgba(10, 10, 18, 0.8) 100%);
+  border: 1px solid var(--primary-glow);
+  border-left: 4px solid var(--primary);
+  border-radius: 12px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  backdrop-filter: blur(10px);
+  animation: slideDown 0.5s ease-out;
+}
+
+.icon {
+  font-size: 1.2rem;
+}
+
+.text {
+  flex: 1;
+  color: white;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.closeBtn {
+  background: transparent;
+  border: none;
+  color: var(--foreground-muted);
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 5px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.closeBtn:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
