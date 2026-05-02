@@ -1,4 +1,3 @@
-const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 const BACKDROP_BASE_URL = 'https://image.tmdb.org/t/p/original';
@@ -22,19 +21,19 @@ export async function getMovieDetails(
   teraboxLink: string,
   type: 'movie' | 'tv' = 'movie'
 ): Promise<MovieDetails | null> {
+  const TMDB_API_KEY = process.env.TMDB_API_KEY;
+  if (!TMDB_API_KEY) { console.error('TMDB_API_KEY is missing!'); return null; }
   try {
+    const sanitizedId = tmdbId.split('-')[0];
     const endpoint = type === 'movie' ? 'movie' : 'tv';
-    const response = await fetch(`${TMDB_BASE_URL}/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}&language=en-US`);
+    const response = await fetch(`${TMDB_BASE_URL}/${endpoint}/${sanitizedId}?api_key=${TMDB_API_KEY}&language=en-US`);
 
-    if (!response.ok) {
-      return null;
-    }
+    if (!response.ok) return null;
 
     const data = await response.json();
 
-    // Safe data parsing with defaults
     return {
-      id: tmdbId,
+      id: sanitizedId,
       title: data.title || data.name || 'Unknown Title',
       description: data.overview || 'No description available.',
       rating: data.vote_average ? parseFloat(data.vote_average.toFixed(1)) : 0,
@@ -47,12 +46,14 @@ export async function getMovieDetails(
       fullReleaseDate: data.release_date || data.first_air_date
     };
   } catch (error) {
-    // Fail silently to prevent site crash
+    console.error('getMovieDetails error:', error);
     return null;
   }
 }
 
 export async function getTrending(): Promise<MovieDetails[]> {
+  const TMDB_API_KEY = process.env.TMDB_API_KEY;
+  if (!TMDB_API_KEY) return [];
   try {
     const response = await fetch(`${TMDB_BASE_URL}/trending/all/day?api_key=${TMDB_API_KEY}&language=en-US`);
 
@@ -96,21 +97,24 @@ export async function getExtendedMovieDetails(
   type: 'movie' | 'tv' = 'movie',
   teraboxLink: string = '#'
 ): Promise<ExtendedMovieDetails | null> {
+  const TMDB_API_KEY = process.env.TMDB_API_KEY;
+  if (!TMDB_API_KEY) { console.error('TMDB_API_KEY is missing in getExtendedMovieDetails!'); return null; }
   try {
+    const sanitizedId = tmdbId.split('-')[0];
     const endpoint = type === 'movie' ? 'movie' : 'tv';
-    // Append credits, videos, and similar
-    // Fetch with multiple video language fallbacks (critical for regional/Indian cinema)
-    const response = await fetch(`${TMDB_BASE_URL}/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}&language=en-US&append_to_response=credits,videos,similar&include_video_language=en,hi,ta,te,kn,ml`);
+    const response = await fetch(
+      `${TMDB_BASE_URL}/${endpoint}/${sanitizedId}?api_key=${TMDB_API_KEY}&language=en-US&append_to_response=credits,videos,similar&include_video_language=en,hi,ta,te,kn,ml`
+    );
 
     if (!response.ok) {
+      console.error(`TMDb API error: ${response.status} for ID ${sanitizedId}`);
       return null;
     }
 
     const data = await response.json();
 
-    // Parse standard details
     const standardDetails = {
-      id: tmdbId,
+      id: sanitizedId,
       title: data.title || data.name || 'Unknown Title',
       description: data.overview || 'No description available.',
       rating: data.vote_average ? parseFloat(data.vote_average.toFixed(1)) : 0,
@@ -122,7 +126,6 @@ export async function getExtendedMovieDetails(
       type: type
     };
 
-    // Extract Trailer (YouTube) with multiple fallbacks
     const videos = data.videos?.results || [];
     const trailer =
       videos.find((v: any) => v.site === 'YouTube' && v.type === 'Trailer') ||
@@ -132,7 +135,6 @@ export async function getExtendedMovieDetails(
 
     const trailerKey = trailer?.key;
 
-    // Extract Cast
     const castData = data.credits?.cast || [];
     const cast: CastMember[] = castData.slice(0, 10).map((c: any) => ({
       id: c.id,
@@ -141,7 +143,6 @@ export async function getExtendedMovieDetails(
       profileUrl: c.profile_path ? `${IMAGE_BASE_URL}${c.profile_path}` : 'https://via.placeholder.com/150x225?text=No+Image'
     }));
 
-    // Extract Director/Creator
     const crew = data.credits?.crew || [];
     let director = 'Unknown';
     if (type === 'movie') {
@@ -152,7 +153,6 @@ export async function getExtendedMovieDetails(
       if (creatorObj) director = creatorObj.name;
     }
 
-    // Extract Similar
     const similarData = data.similar?.results || [];
     const similar: MovieDetails[] = similarData.slice(0, 6).map((m: any) => ({
       id: m.id.toString(),
@@ -175,11 +175,14 @@ export async function getExtendedMovieDetails(
       similar
     };
   } catch (error) {
+    console.error('getExtendedMovieDetails error:', error);
     return null;
   }
 }
 
 export async function searchMulti(query: string): Promise<any> {
+  const TMDB_API_KEY = process.env.TMDB_API_KEY;
+  if (!TMDB_API_KEY) return { results: [] };
   try {
     const response = await fetch(
       `${TMDB_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&language=en-US&query=${encodeURIComponent(query)}&page=1&include_adult=false`
@@ -195,6 +198,8 @@ export async function searchMulti(query: string): Promise<any> {
 }
 
 export async function getUpcoming(): Promise<MovieDetails[]> {
+  const TMDB_API_KEY = process.env.TMDB_API_KEY;
+  if (!TMDB_API_KEY) return [];
   try {
     const response = await fetch(`${TMDB_BASE_URL}/movie/upcoming?api_key=${TMDB_API_KEY}&language=en-US&page=1`);
 
