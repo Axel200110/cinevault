@@ -1037,9 +1037,16 @@
 }
 
 .maintenanceGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: 15px;
+  align-items: center;
+}
+
+.maintenanceGrid > button {
+  flex: 1;
+  min-width: 250px;
+  margin-top: 0;
 }
 
 .aboutInfo {
