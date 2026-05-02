@@ -18,10 +18,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const resolvedParams = await params;
   const { type, id } = resolvedParams;
-  
+
   const movie = await getExtendedMovieDetails(id, type as 'movie' | 'tv');
   if (!movie) return { title: 'Not Found | CineVault' };
-  
+
   return {
     title: `${movie.title} | CineVault`,
     description: movie.description,
@@ -83,30 +83,30 @@ export default async function TitlePage({
     );
   }
 
-  const backdropStyle = movie.backdropUrl 
+  const backdropStyle = movie.backdropUrl
     ? { backgroundImage: `url(${movie.backdropUrl})` }
     : { background: 'var(--background)' };
 
   return (
     <main className={styles.main}>
       <Navbar />
-      
+
       {/* Hero Section */}
       <section className={styles.hero} style={backdropStyle}>
         <div className={styles.heroOverlay}></div>
-        
+
         <div className={styles.heroContent}>
           <div className={styles.heroMain}>
             <div className={styles.posterWrapper}>
               <img src={movie.posterUrl || undefined} alt={movie.title} className={styles.heroPoster} />
             </div>
-            
+
             <div className={styles.heroInfo}>
               <div className={styles.heroHeader}>
                 <h1>{movie.title}</h1>
                 <span className={styles.heroYear}>{movie.year}</span>
               </div>
-              
+
               <div className={styles.heroMeta}>
                 <div className={styles.ratingBadge}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -150,57 +150,57 @@ export default async function TitlePage({
         </div>
       </section>
 
-        {/* Content Section */}
-        <div className={styles.content}>
-          {/* Trailer Section */}
-          {movie.trailerKey && (
-            <section className={`${styles.section} ${styles.reveal}`} style={{ animationDelay: '0.2s' }}>
-              <h2 className={styles.sectionTitle}>Official Trailer</h2>
-              <div className={styles.divider}></div>
-              <div className={styles.trailerContainer}>
-                <iframe
-                  src={`https://www.youtube.com/embed/${movie.trailerKey}`}
-                  title="Trailer"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className={styles.trailerIframe}
-                ></iframe>
-              </div>
-            </section>
-          )}
-
-          {/* Cast Section */}
-          <section className={`${styles.section} ${styles.reveal}`} style={{ animationDelay: '0.4s' }}>
-            <h2 className={styles.sectionTitle}>Cast</h2>
-            <div className={styles.castGrid}>
-              {movie.cast.map(actor => (
-                <div key={actor.id} className={styles.castCard}>
-                  <div className={styles.castImgWrapper}>
-                    <img src={actor.profileUrl || undefined} alt={actor.name} className={styles.castImg} />
-                  </div>
-                  <p className={styles.castName}>{actor.name}</p>
-                  <p className={styles.castRole}>{actor.character}</p>
-                </div>
-              ))}
+      {/* Content Section */}
+      <div className={styles.content}>
+        {/* Trailer Section */}
+        {movie.trailerKey && (
+          <section className={`${styles.section} ${styles.reveal}`} style={{ animationDelay: '0.2s' }}>
+            <h2 className={styles.sectionTitle}>Official Trailer</h2>
+            <div className={styles.divider}></div>
+            <div className={styles.trailerContainer}>
+              <iframe
+                src={`https://www.youtube.com/embed/${movie.trailerKey}`}
+                title="Trailer"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className={styles.trailerIframe}
+              ></iframe>
             </div>
           </section>
+        )}
 
-
-
-          {/* Similar Recommendations */}
-          {movie.similar && movie.similar.length > 0 && (
-            <section className={styles.section} style={{ animationDelay: '0.6s' }}>
-              <h2 className={styles.sectionTitle}>You Might Also Like</h2>
-              <div className={styles.divider}></div>
-              <MovieGrid movies={movie.similar} />
-            </section>
-          )}
-
-          {/* Comment Section */}
-          <div style={{ animationDelay: '0.8s' }} className={styles.section}>
-            <CommentSection tmdbId={movie.id} />
+        {/* Cast Section */}
+        <section className={`${styles.section} ${styles.reveal}`} style={{ animationDelay: '0.4s' }}>
+          <h2 className={styles.sectionTitle}>Cast</h2>
+          <div className={styles.castGrid}>
+            {movie.cast.map(actor => (
+              <div key={actor.id} className={styles.castCard}>
+                <div className={styles.castImgWrapper}>
+                  <img src={actor.profileUrl || undefined} alt={actor.name} className={styles.castImg} />
+                </div>
+                <p className={styles.castName}>{actor.name}</p>
+                <p className={styles.castRole}>{actor.character}</p>
+              </div>
+            ))}
           </div>
+        </section>
+
+
+
+        {/* Similar Recommendations */}
+        {movie.similar && movie.similar.length > 0 && (
+          <section className={styles.section} style={{ animationDelay: '0.6s' }}>
+            <h2 className={styles.sectionTitle}>You Might Also Like</h2>
+            <div className={styles.divider}></div>
+            <MovieGrid movies={movie.similar} />
+          </section>
+        )}
+
+        {/* Comment Section */}
+        <div style={{ animationDelay: '0.8s' }} className={styles.section}>
+          <CommentSection tmdbId={movie.id} />
         </div>
-      </main>
-    );
+      </div>
+    </main>
+  );
 }

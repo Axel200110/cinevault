@@ -32,9 +32,9 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json();
-    
+
     // 3. Filter results to only include those in the Vault
-    const filteredResults = (data.results || []).filter((item: any) => 
+    const filteredResults = (data.results || []).filter((item: any) =>
       vaultIds.has(item.id.toString())
     );
 
