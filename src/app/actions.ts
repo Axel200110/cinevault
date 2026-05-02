@@ -149,9 +149,12 @@ export async function fetchTitlesForAnalytics(movies: any[]) {
 }
 
 // 5. Report Broken Link Action
-export async function reportBrokenLink(tmdbId: string) {
+export async function reportBrokenLink(tmdbId: string, userId?: string) {
   try {
-    const { error } = await supabase.from('reports').insert([{ movie_id: tmdbId }]);
+    const payload: any = { movie_id: tmdbId };
+    if (userId) payload.user_id = userId;
+    
+    const { error } = await supabase.from('reports').insert([payload]);
     return { success: !error };
   } catch (error) {
     console.error("Failed to report link:", error);

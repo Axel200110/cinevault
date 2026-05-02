@@ -13,6 +13,13 @@ export default function RequestPage() {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+
+  React.useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+  }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,13 +41,16 @@ export default function RequestPage() {
   const handleRequest = async (item: any) => {
     setSubmitting(item.id.toString());
     
-    const { error } = await supabase.from('user_requests').insert([{
+    const payload: any = {
       tmdb_id: item.id.toString(),
       title: item.title || item.name,
       type: item.media_type,
       poster_url: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
       status: 'pending'
-    }]);
+    };
+    if (user?.id) payload.user_id = user.id;
+
+    const { error } = await supabase.from('user_requests').insert([payload]);
 
     if (!error) {
       showToast('Request Submitted', `You've successfully requested ${item.title || item.name}. We'll try to add it soon!`, 'success');

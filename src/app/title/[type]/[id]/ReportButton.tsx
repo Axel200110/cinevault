@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { reportBrokenLink } from '@/app/actions';
 import styles from './page.module.css';
 import { useToast } from '@/components/Toast/Toast';
+import { supabase } from '@/lib/supabase';
 
 interface Props {
   tmdbId: string;
@@ -12,12 +13,19 @@ interface Props {
 export default function ReportButton({ tmdbId }: Props) {
   const [reported, setReported] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const { showToast } = useToast();
+
+  React.useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+  }, []);
 
   const handleReport = async () => {
     if (reported) return;
     setLoading(true);
-    const { success } = await reportBrokenLink(tmdbId);
+    const { success } = await reportBrokenLink(tmdbId, user?.id);
     if (success) {
       setReported(true);
       showToast('Report Sent', 'Administrators have been notified.', 'success');

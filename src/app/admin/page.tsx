@@ -216,15 +216,23 @@ export default function AdminPage() {
     showToast('Review Removed', 'The community post has been deleted.', 'info');
   };
 
-  const handleResolveReport = async (id: string) => {
+  const handleResolveReport = async (id: string, userId?: string, movieId?: string) => {
     await resolveReport(id);
+    if (userId) {
+      await createNotification(
+        userId,
+        'link_fixed',
+        `Good news! The broken link you reported has been fixed.`,
+        movieId ? `/title/movie/${movieId}` : undefined
+      );
+    }
     fetchReports();
     showToast('Report Resolved', 'The broken link report has been archived.', 'info');
   };
 
 
 
-  const handleFulfillRequest = async (requestId: string, tmdbId: string, type: string) => {
+  const handleFulfillRequest = async (requestId: string, tmdbId: string, type: string, userId?: string) => {
     const fulfillLink = window.prompt("Enter the Terabox link for this requested movie:");
     if (!fulfillLink) return;
 
@@ -245,6 +253,14 @@ export default function AdminPage() {
     const { error: updateError } = await supabase.from('user_requests').update({ status: 'fulfilled' }).eq('id', requestId);
     
     if (!updateError) {
+      if (userId) {
+        await createNotification(
+          userId,
+          'request_fulfilled',
+          `Your request has been fulfilled! The title is now available.`,
+          `/title/${type}/${tmdbId}`
+        );
+      }
       showToast('Request Fulfilled', 'The movie has been added to the vault.', 'success');
       // Refresh
       const { data } = await supabase.from('user_requests').select('*').order('created_at', { ascending: false });
@@ -684,7 +700,7 @@ export default function AdminPage() {
                             {report.status === 'pending' && (
                               <button 
                                 className={styles.saveBtn}
-                                onClick={() => handleResolveReport(report.id)}
+                                onClick={() => handleResolveReport(report.id, report.user_id, report.movie_id)}
                               >
                                 Resolve
                               </button>
@@ -741,7 +757,7 @@ export default function AdminPage() {
                             {req.status === 'pending' && (
                               <button 
                                 className={styles.saveBtn}
-                                onClick={() => handleFulfillRequest(req.id, req.tmdb_id, req.type)}
+                                onClick={() => handleFulfillRequest(req.id, req.tmdb_id, req.type, req.user_id)}
                               >
                                 Fulfill
                               </button>
