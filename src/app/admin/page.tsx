@@ -516,57 +516,58 @@ export default function AdminPage() {
                   </thead>
                   <tbody>
                     {movies.map((movie) => (
-                      editingId === movie.id ? (
-                        <tr key={movie.id} className={styles.editingRow}>
-                          <td>
-                            <input 
-                              className={styles.editInput} 
-                              value={editTmdbId} 
-                              onChange={(e) => setEditTmdbId(e.target.value)} 
-                            />
-                          </td>
-                          <td>
-                            <select 
-                              className={styles.editSelect} 
-                              value={editType} 
-                              onChange={(e) => setEditType(e.target.value)}
-                            >
-                              <option value="movie">movie</option>
-                              <option value="tv">tv</option>
-                            </select>
-                          </td>
-                          <td>
-                            <input 
-                              className={styles.editInput} 
-                              value={editLink} 
-                              onChange={(e) => setEditLink(e.target.value)} 
-                            />
-                          </td>
-                          <td>
-                            {movie.linkStatus === 'checking' && <span className={styles.statusChecking}>Checking...</span>}
-                            {movie.linkStatus === 'active' && <span className={styles.statusActive}>✅ Active</span>}
-                            {movie.linkStatus === 'broken' && <span className={styles.statusBroken}>❌ Broken</span>}
-                          </td>
-                          <td className={styles.actionCell}>
-                            <div className={styles.actionGroup}>
-                              <button className={styles.saveBtn} onClick={() => handleSaveEdit(movie.id)}>Save</button>
-                              <button className={styles.cancelBtn} onClick={cancelEdit}>Cancel</button>
-                            </div>
-                          </td>
-                        </tr>
-                      ) : (
-                        <tr key={movie.id}>
-                          <td>{movie.tmdb_id}</td>
-                          <td>
-                            <span className={`${styles.badge} ${movie.type === 'movie' ? styles.badgeMovie : styles.badgeTv}`}>
-                              {movie.type}
-                            </span>
-                          </td>
-                          <td className={styles.linkCell}>
-                            <a href={movie.terabox_link} target="_blank" rel="noopener noreferrer">
-                              {movie.terabox_link}
-                            </a>
-                          </td>
+                      <React.Fragment key={movie.id}>
+                        {editingId === movie.id ? (
+                          <tr className={styles.editingRow}>
+                            <td>
+                              <input 
+                                className={styles.editInput} 
+                                value={editTmdbId} 
+                                onChange={(e) => setEditTmdbId(e.target.value)} 
+                              />
+                            </td>
+                            <td>
+                              <select 
+                                className={styles.editSelect} 
+                                value={editType} 
+                                onChange={(e) => setEditType(e.target.value)}
+                              >
+                                <option value="movie">movie</option>
+                                <option value="tv">tv</option>
+                              </select>
+                            </td>
+                            <td>
+                              <input 
+                                className={styles.editInput} 
+                                value={editLink} 
+                                onChange={(e) => setEditLink(e.target.value)} 
+                              />
+                            </td>
+                            <td>
+                              {movie.linkStatus === 'checking' && <span className={styles.statusChecking}>Checking...</span>}
+                              {movie.linkStatus === 'active' && <span className={styles.statusActive}>✅ Active</span>}
+                              {movie.linkStatus === 'broken' && <span className={styles.statusBroken}>❌ Broken</span>}
+                            </td>
+                            <td className={styles.actionCell}>
+                              <div className={styles.actionGroup}>
+                                <button className={styles.saveBtn} onClick={() => handleSaveEdit(movie.id)}>Save</button>
+                                <button className={styles.cancelBtn} onClick={cancelEdit}>Cancel</button>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          <tr>
+                            <td>{movie.tmdb_id}</td>
+                            <td>
+                              <span className={`${styles.badge} ${movie.type === 'movie' ? styles.badgeMovie : styles.badgeTv}`}>
+                                {movie.type}
+                              </span>
+                            </td>
+                            <td className={styles.linkCell}>
+                              <a href={movie.terabox_link} target="_blank" rel="noopener noreferrer">
+                                {movie.terabox_link}
+                              </a>
+                            </td>
                           <td>
                             {movie.linkStatus === 'checking' && <span className={styles.statusChecking}>Checking...</span>}
                             {movie.linkStatus === 'active' && <span className={styles.statusActive}>✅ Active</span>}
@@ -597,7 +598,8 @@ export default function AdminPage() {
                             </div>
                           </td>
                         </tr>
-                      )
+                        )}
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>
