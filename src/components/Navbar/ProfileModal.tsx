@@ -37,37 +37,51 @@ const ProfileModal = ({ user, onClose }: Props) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file size (e.g., 2MB limit)
+    if (file.size > 2 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Image too large. Max 2MB allowed.' });
+      return;
+    }
+
     setUploading(true);
     setMessage({ type: '', text: '' });
 
     try {
-      // 1. Ensure bucket exists (best effort)
-      const { data: buckets } = await supabase.storage.listBuckets();
-      if (!buckets?.find(b => b.name === 'avatars')) {
-        await supabase.storage.createBucket('avatars', { public: true });
-      }
+      // 1. Generate clean filename
+      const fileExt = file.name.split('.').pop() || 'png';
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`; // Upload to root of bucket for simplicity
 
-      // 2. Upload file
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-      const filePath = `public/${fileName}`;
-
+      // 2. Upload file (assumes 'avatars' bucket exists and is public)
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file);
+        .upload(filePath, file, { 
+          upsert: true,
+          contentType: file.type 
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Storage error:', uploadError);
+        throw new Error(uploadError.message);
+      }
 
       // 3. Get Public URL
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
+      if (!publicUrl) throw new Error('Failed to generate public URL');
+
       setAvatarUrl(publicUrl);
-      setMessage({ type: 'success', text: 'Image uploaded! Save to apply changes.' });
+      setMessage({ type: 'success', text: 'Image uploaded! Click "Save Profile" to finish.' });
     } catch (error: any) {
-      console.error('Upload error:', error);
-      setMessage({ type: 'error', text: 'Upload failed. Ensure "avatars" bucket is public.' });
+      console.error('Upload error details:', error);
+      setMessage({ 
+        type: 'error', 
+        text: error.message.includes('not found') 
+          ? 'Storage bucket "avatars" not found. Please contact admin.' 
+          : `Upload failed: ${error.message}` 
+      });
     } finally {
       setUploading(false);
     }
@@ -79,24 +93,34 @@ const ProfileModal = ({ user, onClose }: Props) => {
     setMessage({ type: '', text: '' });
 
     try {
-      const { error } = await supabase.auth.updateUser({
+      // 1. Update Auth Metadata (updates current session)
+      const { error: authError } = await supabase.auth.updateUser({
         data: { 
           username, 
           avatar_url: avatarUrl 
         }
       });
 
-      if (error) throw error;
+      if (authError) throw authError;
 
-      // Sync with profiles table
-      await updateProfile(user.id, username, avatarUrl);
-      setMessage({ type: 'success', text: 'Profile updated successfully!' });
+      // 2. Sync with profiles table (for global lookups)
+      const syncResult = await updateProfile(user.id, username, avatarUrl);
       
-      // Force refresh components
-      window.location.reload();
-      setTimeout(onClose, 1000);
+      if (!syncResult.success) {
+        console.warn('Metadata updated but profile table sync failed.');
+      }
+
+      setMessage({ type: 'success', text: 'Profile updated successfully! Refreshing...' });
+      
+      // 3. Force a session refresh before reload
+      await supabase.auth.refreshSession();
+      
+      // Small delay for UX then reload
+      setTimeout(() => {
+        window.location.reload();
+      }, 800);
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+      setMessage({ type: 'error', text: error.message || 'Failed to update profile.' });
     } finally {
       setLoading(false);
     }
