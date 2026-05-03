@@ -217,17 +217,13 @@ export default function AdminPage() {
   };
 
   const handleResolveReport = async (id: string, userId?: string, movieId?: string) => {
-    await resolveReport(id);
-    if (userId) {
-      await createNotification(
-        userId,
-        'link_fixed',
-        `Good news! The broken link you reported has been fixed.`,
-        movieId ? `/title/movie/${movieId}` : undefined
-      );
+    const result = await resolveReport(id, userId, movieId);
+    if (result.success) {
+      fetchReports();
+      showToast('Report Resolved', 'The broken link report has been archived and user notified.', 'info');
+    } else {
+      showToast('Resolve Failed', 'Could not update report status.', 'error');
     }
-    fetchReports();
-    showToast('Report Resolved', 'The broken link report has been archived.', 'info');
   };
 
 

@@ -164,9 +164,19 @@ export async function reportBrokenLink(tmdbId: string, userId?: string) {
 }
 
 // 6. Resolve Report Action (Admin)
-export async function resolveReport(reportId: string) {
+export async function resolveReport(reportId: string, userId?: string, movieId?: string) {
   try {
     const { error } = await supabase.from('reports').update({ status: 'resolved' }).eq('id', reportId);
+    
+    if (!error && userId) {
+      await createNotification(
+        userId,
+        'link_fixed',
+        `Good news! The broken link you reported has been fixed.`,
+        movieId ? `/title/movie/${movieId}` : undefined
+      );
+    }
+    
     return { success: !error };
   } catch (error) {
     return { success: false };
