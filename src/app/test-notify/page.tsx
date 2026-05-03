@@ -26,16 +26,31 @@ export default function TestNotify() {
     setMessage('');
 
     try {
-      await createNotification(
-        user.id,
-        'link_fixed',
-        '🚨 TEST: Your notification system is working perfectly!',
-        '/',
-        'https://image.tmdb.org/t/p/w200/iu85Vp6NnE8F6l0ZisPj6U9Sg2v.jpg'
-      );
-      setMessage('Success! Check your notification bell 🔔');
+      console.log('--- STARTING CLIENT-SIDE TEST ---');
+      console.log('Current User ID:', user.id);
+      
+      // Try to insert directly from the client (Client-side test)
+      const { data, error } = await supabase
+        .from('notifications')
+        .insert([{
+          user_id: user.id,
+          type: 'test',
+          message: '🚨 CLIENT TEST: If you see this, your browser can talk to Supabase!',
+          link: '/',
+          poster_url: 'https://image.tmdb.org/t/p/w200/iu85Vp6NnE8F6l0ZisPj6U9Sg2v.jpg'
+        }])
+        .select();
+
+      if (error) {
+        console.error('Client-side insert FAILED:', error);
+        throw error;
+      }
+
+      console.log('Client-side insert SUCCESS!', data);
+      setMessage('Success! Check your notification bell 🔔 (Check console for logs)');
     } catch (error: any) {
-      setMessage(`Error: ${error.message}`);
+      console.error('Test Error:', error);
+      setMessage(`Error: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
