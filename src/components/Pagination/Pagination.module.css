@@ -1,0 +1,38 @@
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 50px;
+  padding-bottom: 20px;
+}
+
+.pageBtn {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.pageBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.active {
+  background: var(--primary) !important;
+  border-color: var(--primary);
+  box-shadow: 0 0 15px var(--primary-glow);
+}
+
+@media (max-width: 480px) {
+  .pageBtn {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+  }
+}

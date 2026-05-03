@@ -44,8 +44,10 @@ export default async function Home() {
   const topMovies = [...movies].sort((a, b) => b.rating - a.rating).slice(0, 10);
   const topTV = [...series].sort((a, b) => b.rating - a.rating).slice(0, 10);
 
-  // Most Popular (Top 5 by clicks) - already mostly sorted by movieSources order
-  const popular = allContent.slice(0, 5);
+  // Most Popular
+  const popular = allContent.slice(0, 7);
+  const movieShowcase = movies.slice(0, 14);
+  const tvShowcase = series.slice(0, 7);
 
   // Professional Static Hero Backdrop (Migration 2023)
   const heroBackdrop = "https://image.tmdb.org/t/p/original/gklkxY0veMajdCiGe6ggsh07VG2.jpg";
@@ -133,7 +135,13 @@ export default async function Home() {
         {popular.length > 0 && (
           <section className={styles.pageContent}>
             <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>🔥 Most Popular</h2>
+              <div className={styles.sectionHeaderTop}>
+                <h2 className={styles.sectionTitle}>🔥 Most Popular</h2>
+                <Link href="/popular" className={styles.viewAllBtn}>
+                  View All 
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </Link>
+              </div>
               <div className={styles.divider}></div>
             </div>
             <MovieGrid movies={popular} />
@@ -143,19 +151,31 @@ export default async function Home() {
         {/* 2. All Movies Grid */}
         <section id="library" className={styles.pageContent}>
           <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>All Movies</h2>
+            <div className={styles.sectionHeaderTop}>
+              <h2 className={styles.sectionTitle}>All Movies</h2>
+              <Link href="/movies" className={styles.viewAllBtn}>
+                View All Movies
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </Link>
+            </div>
             <div className={styles.divider}></div>
           </div>
-          <MovieGrid movies={movies} />
+          <MovieGrid movies={movieShowcase} />
         </section>
 
         {/* 3. TV Shows Grid */}
         <section className={styles.pageContent}>
           <div className={styles.sectionHeader}>
-            <h2 className={styles.sectionTitle}>TV Shows</h2>
+            <div className={styles.sectionHeaderTop}>
+              <h2 className={styles.sectionTitle}>TV Shows</h2>
+              <Link href="/series" className={styles.viewAllBtn}>
+                View All Shows
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </Link>
+            </div>
             <div className={styles.divider}></div>
           </div>
-          <MovieGrid movies={series} />
+          <MovieGrid movies={tvShowcase} />
         </section>
 
         <section className={styles.topListsContainer}>

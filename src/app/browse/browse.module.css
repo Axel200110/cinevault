@@ -4,7 +4,7 @@
 }
 
 .hero {
-  padding: 60px 8% 40px;
+  padding: 110px 8% 40px;
   background: linear-gradient(to bottom, rgba(220, 38, 38, 0.1), transparent);
 }
 
@@ -196,7 +196,7 @@
 
 @media (max-width: 768px) {
   .hero {
-    padding: 100px 6% 30px;
+    padding: 80px 6% 30px;
     text-align: center;
   }
   .heroTitle {

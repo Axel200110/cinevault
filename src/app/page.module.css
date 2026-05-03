@@ -185,6 +185,37 @@
   letter-spacing: -1px;
 }
 
+.sectionHeaderTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 12px;
+}
+
+.sectionHeaderTop .sectionTitle {
+  margin-bottom: 0;
+}
+
+.viewAllBtn {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  opacity: 0.9;
+  margin-bottom: 6px;
+}
+
+.viewAllBtn:hover {
+  color: #fff;
+  transform: translateX(3px);
+  text-shadow: 0 0 10px var(--primary-glow);
+}
+
+
 .divider {
   width: 60px;
   height: 4px;
@@ -325,6 +356,18 @@
   padding: 40px 0;
   position: relative;
 }
+
+.standalonePage {
+  padding-top: 110px !important;
+  min-height: 100vh;
+}
+
+@media (max-width: 768px) {
+  .standalonePage {
+    padding-top: 80px !important;
+  }
+}
+
 
 .pageContent::before {
   content: "";
