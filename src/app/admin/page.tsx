@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import styles from './admin.module.css';
 import ProductionWizard from './ProductionWizard';
 import AnalyticsChart from './AnalyticsChart';
-import { fetchTmdbPreview, checkLinkStatus, searchTmdb, fetchTitlesForAnalytics, resolveReport, deleteComment, createNotification, addMovieToVault } from '@/app/actions';
+import { fetchTmdbPreview, checkLinkStatus, searchTmdb, fetchTitlesForAnalytics, resolveReport, deleteComment, createNotification, addMovieToVault, updateMovieAction } from '@/app/actions';
 
 interface MovieRow {
   id: string;
@@ -151,30 +151,15 @@ export default function AdminPage() {
   const handleSaveEdit = async (id: string) => {
     if (!window.confirm('Are you sure you want to save these changes?')) return;
     
-    const { error } = await supabase
-      .from('movies')
-      .update({ tmdb_id: editTmdbId, terabox_link: editLink, type: editType })
-      .eq('id', id);
+    const result = await updateMovieAction(id, editTmdbId, editLink, editType as 'movie' | 'tv');
       
-    if (!error) {
+    if (result.success) {
       setEditingId(null);
       fetchMovies();
-      showToast('Library Updated', 'The content details have been successfully modified.', 'success');
-
-      // Notify users who have this in their watchlist
-      const { data: watchlistUsers } = await supabase.from('watchlists').select('user_id').eq('movie_id', editTmdbId);
-      if (watchlistUsers && watchlistUsers.length > 0) {
-        watchlistUsers.forEach(async (entry: any) => {
-          await createNotification(
-            entry.user_id, 
-            'link_fixed', 
-            `Update: The source link for a title in your watchlist has been restored.`, 
-            `/title/${editType}/${editTmdbId}`
-          );
-        });
-      }
+      fetchReports(); // Refresh reports too since some might have been resolved
+      showToast('Library Updated', 'The content details have been modified and users notified.', 'success');
     } else {
-      showToast('Update Failed', error.message, 'error');
+      showToast('Update Failed', result.error || 'Could not update record.', 'error');
     }
   };
 

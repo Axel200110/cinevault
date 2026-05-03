@@ -339,3 +339,70 @@ export async function addMovieToVault(tmdbId: string, teraboxLink: string, type:
     return { success: false, error: error.message };
   }
 }
+
+// 13. Update Movie Action (Admin)
+export async function updateMovieAction(id: string, tmdbId: string, teraboxLink: string, type: 'movie' | 'tv') {
+  try {
+    // 1. Update the movie record
+    const { error: movieError } = await supabase
+      .from('movies')
+      .update({ tmdb_id: tmdbId, terabox_link: teraboxLink, type: type })
+      .eq('id', id);
+
+    if (movieError) throw movieError;
+
+    // 2. Notify users who have this in their watchlist
+    const { data: watchlistUsers } = await supabase
+      .from('watchlists')
+      .select('user_id')
+      .eq('movie_id', tmdbId);
+
+    if (watchlistUsers && watchlistUsers.length > 0) {
+      for (const entry of watchlistUsers) {
+        await createNotification(
+          entry.user_id,
+          'link_fixed',
+          `Update: The source link for a title in your watchlist has been restored.`,
+          `/title/${type}/${tmdbId}`
+        );
+      }
+    }
+
+    // 3. Resolve any pending reports for this movie and notify the reporters
+    const { data: pendingReports } = await supabase
+      .from('reports')
+      .select('id, user_id')
+      .eq('movie_id', tmdbId)
+      .eq('status', 'pending');
+
+    if (pendingReports && pendingReports.length > 0) {
+      // Mark all as resolved
+      await supabase
+        .from('reports')
+        .update({ status: 'resolved' })
+        .eq('movie_id', tmdbId)
+        .eq('status', 'pending');
+
+      // Notify reporters
+      for (const report of pendingReports) {
+        if (report.user_id) {
+          await createNotification(
+            report.user_id,
+            'link_fixed',
+            `Good news! A broken link you reported has been fixed and updated.`,
+            `/title/${type}/${tmdbId}`
+          );
+        }
+      }
+    }
+
+    // Trigger revalidation
+    revalidatePath('/');
+    revalidatePath('/browse');
+    revalidatePath(`/title/${type}/${tmdbId}`);
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
