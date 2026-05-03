@@ -289,6 +289,35 @@ export async function addMovieToVault(tmdbId: string, teraboxLink: string, type:
     }]);
 
     if (!error) {
+      // 1. Check for any pending user requests for this content
+      const { data: requests } = await supabase
+        .from('user_requests')
+        .select('*')
+        .eq('tmdb_id', tmdbId)
+        .eq('status', 'pending');
+
+      if (requests && requests.length > 0) {
+        // 2. Mark all as fulfilled
+        await supabase
+          .from('user_requests')
+          .update({ status: 'fulfilled' })
+          .eq('tmdb_id', tmdbId)
+          .eq('status', 'pending');
+
+        // 3. Notify each user
+        for (const req of requests) {
+          if (req.user_id) {
+            await createNotification(
+              req.user_id,
+              'request_fulfilled',
+              `Your request for "${req.title || 'a movie'}" has been fulfilled!`,
+              `/title/${type}/${tmdbId}`,
+              req.poster_url
+            );
+          }
+        }
+      }
+
       // Trigger revalidation for the home page and other relevant routes
       revalidatePath('/');
       revalidatePath('/browse');

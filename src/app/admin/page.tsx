@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import styles from './admin.module.css';
 import ProductionWizard from './ProductionWizard';
 import AnalyticsChart from './AnalyticsChart';
-import { fetchTmdbPreview, checkLinkStatus, searchTmdb, fetchTitlesForAnalytics, resolveReport, deleteComment, createNotification } from '@/app/actions';
+import { fetchTmdbPreview, checkLinkStatus, searchTmdb, fetchTitlesForAnalytics, resolveReport, deleteComment, createNotification, addMovieToVault } from '@/app/actions';
 
 interface MovieRow {
   id: string;
@@ -232,40 +232,21 @@ export default function AdminPage() {
 
 
 
-  const handleFulfillRequest = async (requestId: string, tmdbId: string, type: string, userId?: string) => {
+  const handleFulfillRequest = async (requestId: string, tmdbId: string, type: string) => {
     const fulfillLink = window.prompt("Enter the Terabox link for this requested movie:");
     if (!fulfillLink) return;
 
-    // 1. Add to movies library
-    const { error: insertError } = await supabase.from('movies').insert([{
-      tmdb_id: tmdbId,
-      terabox_link: fulfillLink,
-      type: type,
-      clicks: 0
-    }]);
+    // Use the central action which handles insertion, revalidation, and notifications
+    const result = await addMovieToVault(tmdbId, fulfillLink, type as 'movie' | 'tv');
 
-    if (insertError) {
-      showToast('Fulfill Failed', 'Could not add to library.', 'error');
-      return;
-    }
-
-    // 2. Mark request as fulfilled
-    const { error: updateError } = await supabase.from('user_requests').update({ status: 'fulfilled' }).eq('id', requestId);
-    
-    if (!updateError) {
-      if (userId) {
-        await createNotification(
-          userId,
-          'request_fulfilled',
-          `Your request has been fulfilled! The title is now available.`,
-          `/title/${type}/${tmdbId}`
-        );
-      }
-      showToast('Request Fulfilled', 'The movie has been added to the vault.', 'success');
-      // Refresh
+    if (result.success) {
+      showToast('Request Fulfilled', 'The movie has been added and users notified.', 'success');
+      // Refresh local state
       const { data } = await supabase.from('user_requests').select('*').order('created_at', { ascending: false });
       if (data) setUserRequests(data);
       fetchMovies();
+    } else {
+      showToast('Fulfill Failed', result.error || 'Could not add to library.', 'error');
     }
   };
 
