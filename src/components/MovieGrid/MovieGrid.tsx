@@ -11,8 +11,8 @@ const MovieGrid = ({ movies }: Props) => {
   return (
     <div className={styles.container}>
       <div className={styles.grid}>
-        {movies.map((movie) => (
-          <MovieCard key={movie.id} movie={movie} />
+        {movies.map((movie, index) => (
+          <MovieCard key={`${movie.id}-${index}`} movie={movie} />
         ))}
       </div>
     </div>

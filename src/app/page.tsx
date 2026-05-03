@@ -89,7 +89,7 @@ export default async function Home() {
           </div>
           <div className={styles.horizontalScroll}>
             {trending.map((item, index) => (
-              <Link href={`/title/${item.type}/${item.id}`} key={item.id} className={styles.trendingCard}>
+              <Link href={`/title/${item.type}/${item.id}`} key={`${item.id}-${index}`} className={styles.trendingCard}>
                 <span className={styles.rankNumber}>{index + 1}</span>
                 <img
                   src={item.posterUrl}
@@ -110,8 +110,8 @@ export default async function Home() {
             </div>
             
             <div className={styles.horizontalScroll}>
-              {upcoming.map((item) => (
-                <div key={item.id} className={styles.trendingCard}>
+              {upcoming.map((item, index) => (
+                <div key={`${item.id}-${index}`} className={styles.trendingCard}>
                   <div className={styles.dateBadge}>
                     {item.fullReleaseDate ? new Date(item.fullReleaseDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Soon'}
                   </div>
@@ -164,7 +164,7 @@ export default async function Home() {
             <div className={styles.divider}></div>
             <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
               {topMovies.map((movie, index) => (
-                <Link href={`/title/movie/${movie.id}`} key={movie.id} className={styles.topItem}>
+                <Link href={`/title/movie/${movie.id}`} key={`${movie.id}-${index}`} className={styles.topItem}>
                   <span className={styles.topRank}>{index + 1}</span>
                   <img src={movie.posterUrl} alt={movie.title} className={styles.topPoster} />
                   <div className={styles.topInfo}>
@@ -181,7 +181,7 @@ export default async function Home() {
             <div className={styles.divider}></div>
             <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
               {topTV.map((show, index) => (
-                <Link href={`/title/tv/${show.id}`} key={show.id} className={styles.topItem}>
+                <Link href={`/title/tv/${show.id}`} key={`${show.id}-${index}`} className={styles.topItem}>
                   <span className={styles.topRank}>{index + 1}</span>
                   <img src={show.posterUrl} alt={show.title} className={styles.topPoster} />
                   <div className={styles.topInfo}>
