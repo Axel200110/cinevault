@@ -77,15 +77,24 @@ export default function NotificationBell({ userId }: { userId: string }) {
                 className={`${styles.bellItem} ${!n.is_read ? styles.bellUnread : ''}`}
                 onClick={() => handleRead(n.id)}
               >
-                <div className={styles.bellIcon}>
-                  {n.type === 'link_fixed' ? '✅' : '📺'}
+                <div className={styles.bellVisual}>
+                  {n.poster_url ? (
+                    <img src={n.poster_url} alt="" className={styles.bellPoster} />
+                  ) : (
+                    <div className={styles.bellIconFallback}>
+                      {n.type === 'link_fixed' ? '✅' : '📺'}
+                    </div>
+                  )}
                 </div>
                 <div className={styles.bellContent}>
+                  <div className={styles.bellItemHeader}>
+                    <span className={styles.bellStatus}>{n.type === 'link_fixed' ? 'FIXED' : 'READY'}</span>
+                    <span className={styles.bellTime}>{new Date(n.created_at).toLocaleDateString()}</span>
+                  </div>
                   <p className={styles.bellMsg}>{n.message}</p>
-                  <span className={styles.bellTime}>{new Date(n.created_at).toLocaleDateString()}</span>
                   {n.link && (
                     <Link href={n.link} className={styles.bellLink} onClick={() => setIsOpen(false)}>
-                      Review Intel →
+                      View Details →
                     </Link>
                   )}
                 </div>

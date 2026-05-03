@@ -1,9 +1,9 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.8);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.85);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -18,164 +18,256 @@
 
 .modal {
   background: #0f0f19;
-  width: 90%;
-  max-width: 450px;
-  border-radius: 24px;
+  width: 95%;
+  max-width: 480px;
+  border-radius: 32px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 30px;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
+  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(40px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.header {
+.banner {
+  height: 120px;
+  background: linear-gradient(135deg, #1e1e2e 0%, var(--primary) 100%);
+  position: relative;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
+  justify-content: flex-end;
+  padding: 20px;
 }
 
-.header h2 {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: white;
+.bannerGlow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.1), transparent 70%);
 }
 
 .closeBtn {
-  background: none;
+  position: relative;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.3);
   border: none;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 2rem;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
   cursor: pointer;
-  line-height: 1;
-  transition: color 0.3s;
+  transition: all 0.3s;
 }
 
 .closeBtn:hover {
+  background: rgba(0, 0, 0, 0.5);
+  transform: rotate(90deg);
+}
+
+.modalBody {
+  padding: 0 30px 40px;
+  margin-top: -50px; /* Overlap the banner */
+}
+
+.profileAvatarSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.avatarWrapper {
+  position: relative;
+}
+
+.avatarCircle {
+  width: 110px;
+  height: 110px;
+  background: #0f0f19;
+  border: 4px solid #0f0f19;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.mainAvatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.mainAvatarEmoji {
+  font-size: 4rem;
+}
+
+.cameraBtn {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: var(--primary);
   color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 4px solid #0f0f19;
+  transition: all 0.3s;
+  box-shadow: 0 5px 15px var(--primary-glow);
+}
+
+.cameraBtn:hover {
+  transform: scale(1.1);
+  background: #be123c;
+}
+
+.profileInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profileName {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: white;
+  letter-spacing: -0.5px;
+}
+
+.profileEmail {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 600;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 25px;
 }
 
-.inputGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.fieldLabel {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 10px;
 }
 
-.inputGroup label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.inputGroup input {
+.textInput {
+  width: 100%;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 12px 16px;
-  border-radius: 12px;
+  padding: 16px 20px;
+  border-radius: 16px;
   color: white;
-  font-size: 0.95rem;
+  font-size: 1rem;
+  font-weight: 600;
   outline: none;
   transition: all 0.3s;
 }
 
-.inputGroup input:focus {
+.textInput:focus {
   border-color: var(--primary);
   background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 15px rgba(225, 29, 72, 0.1);
+  box-shadow: 0 0 20px rgba(225, 29, 72, 0.15);
 }
 
-.disabledInput {
-  opacity: 0.5;
-  cursor: not-allowed;
+.emojiGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+}
+
+.emojiItem {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  aspect-ratio: 1/1;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.emojiItem:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: scale(1.1);
+}
+
+.emojiActive {
+  background: rgba(225, 29, 72, 0.1) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 15px var(--primary-glow);
 }
 
 .submitBtn {
-  margin-top: 10px;
   background: var(--primary);
   color: white;
   border: none;
-  padding: 15px;
-  border-radius: 12px;
-  font-weight: 800;
-  font-size: 1rem;
+  padding: 18px;
+  border-radius: 18px;
+  font-weight: 900;
+  font-size: 1.05rem;
   cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 10px 20px var(--primary-glow);
+  transition: all 0.4s;
+  box-shadow: 0 15px 30px var(--primary-glow);
+  margin-top: 10px;
 }
 
 .submitBtn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 15px 30px var(--primary-glow);
+  transform: translateY(-3px);
+  background: #be123c;
+  box-shadow: 0 20px 40px var(--primary-glow);
 }
 
 .submitBtn:disabled {
   opacity: 0.5;
-  cursor: wait;
+  cursor: not-allowed;
 }
 
 .message {
-  padding: 12px;
-  border-radius: 10px;
+  padding: 14px;
+  border-radius: 12px;
   font-size: 0.9rem;
   text-align: center;
+  font-weight: 600;
 }
 
 .success {
-  background: rgba(34, 197, 94, 0.1);
-  color: #4ade80;
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .error {
   background: rgba(239, 68, 68, 0.1);
-  color: #f87171;
+  color: #ef4444;
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
-.avatarGrid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
-  margin-top: 10px;
-}
-
-.avatarItem {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 1.6rem;
-  aspect-ratio: 1 / 1;
-  border-radius: 14px;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-}
-
-.avatarItem:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: scale(1.1);
-}
-
-.avatarActive {
-  background: rgba(225, 29, 72, 0.2) !important;
-  border-color: var(--primary) !important;
-  box-shadow: 0 0 15px rgba(225, 29, 72, 0.3);
-}
-
-@media (max-width: 450px) {
-  .avatarGrid {
+@media (max-width: 480px) {
+  .emojiGrid {
     grid-template-columns: repeat(5, 1fr);
   }
 }

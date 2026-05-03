@@ -241,11 +241,11 @@ export async function updateProfile(userId: string, username: string, avatarUrl:
 }
 
 // 11. Notifications
-export async function createNotification(userId: string, type: string, message: string, link?: string) {
+export async function createNotification(userId: string, type: string, message: string, link?: string, posterUrl?: string) {
   try {
     const { error } = await supabase
       .from('notifications')
-      .insert([{ user_id: userId, type, message, link }]);
+      .insert([{ user_id: userId, type, message, link, poster_url: posterUrl }]);
     return { success: !error };
   } catch (error) {
     return { success: false };

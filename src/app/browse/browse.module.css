@@ -193,3 +193,27 @@
   transform: translateY(-3px);
   box-shadow: 0 15px 30px rgba(225, 29, 72, 0.4);
 }
+
+@media (max-width: 768px) {
+  .hero {
+    padding: 100px 6% 30px;
+    text-align: center;
+  }
+  .heroTitle {
+    font-size: 2.2rem;
+  }
+  .heroSubtitle {
+    font-size: 1rem;
+  }
+  .container {
+    padding: 0 6% 60px;
+  }
+  .filterSection {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .select {
+    width: 100%;
+    min-width: unset;
+  }
+}

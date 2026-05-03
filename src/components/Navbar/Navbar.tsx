@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import styles from './Navbar.module.css';
 import ProfileModal from './ProfileModal';
@@ -16,12 +16,22 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const moreRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -103,7 +113,7 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className={styles.navbar}>
+      <nav className={`${styles.navbar} ${scrolled ? styles.navbarScrolled : ''}`}>
         <Link href="/" className={styles.logo}>
           <div className={styles.logoIcon}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--primary)">
@@ -116,10 +126,10 @@ const Navbar = () => {
         {/* Desktop Links - Centered */}
         <div className={styles.navMain}>
           <div className={styles.links}>
-            <Link href="/browse" className={styles.link}>Browse</Link>
-            <Link href="/series" className={styles.link}>Series</Link>
-            <Link href="/trending" className={styles.link}>Trending</Link>
-            <Link href="/request" className={styles.link}>Request</Link>
+            <Link href="/browse" className={`${styles.link} ${pathname === '/browse' ? styles.activeLink : ''}`}>Browse</Link>
+            <Link href="/series" className={`${styles.link} ${pathname === '/series' ? styles.activeLink : ''}`}>Series</Link>
+            <Link href="/trending" className={`${styles.link} ${pathname === '/trending' ? styles.activeLink : ''}`}>Trending</Link>
+            <Link href="/request" className={`${styles.link} ${pathname === '/request' ? styles.activeLink : ''}`}>Request</Link>
 
             {/* More Dropdown */}
             <div className={styles.moreContainer} ref={moreRef}>
@@ -214,71 +224,84 @@ const Navbar = () => {
               onClick={() => user ? setDropdownOpen(!dropdownOpen) : router.push('/auth')}
               title={user ? "Profile Settings" : "Login"}
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
+              {user?.user_metadata?.avatar_url ? (
+                user.user_metadata.avatar_url.includes('://') ? (
+                  <img src={user.user_metadata.avatar_url} alt="" className={styles.navProfileImg} />
+                ) : (
+                  <span className={styles.navProfileEmoji}>{user.user_metadata.avatar_url}</span>
+                )
+              ) : (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              )}
             </button>
 
             {dropdownOpen && user && (
               <div className={styles.dropdown}>
                 <div className={styles.dropdownHeader}>
+                  <div className={styles.avatarGlow}></div>
                   <div className={styles.userAvatar}>
-                    {user.user_metadata?.avatar_url && user.user_metadata.avatar_url.includes('://') ? (
-                      <img src={user.user_metadata.avatar_url} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                    {user.user_metadata?.avatar_url ? (
+                      user.user_metadata.avatar_url.includes('://') ? (
+                        <img src={user.user_metadata.avatar_url} alt="" className={styles.avatarImg} />
+                      ) : (
+                        <span className={styles.avatarEmoji}>{user.user_metadata.avatar_url}</span>
+                      )
                     ) : (
-                      user.user_metadata?.avatar_url || (user.user_metadata?.username?.[0] || user.email?.[0]).toUpperCase()
+                      <span className={styles.avatarEmoji}>👤</span>
                     )}
                   </div>
                   <div className={styles.userInfo}>
-                    <span className={styles.userName}>{user.user_metadata?.username || 'Member'}</span>
+                    <span className={styles.userName}>{user.user_metadata?.username || 'Commander'}</span>
                     <span className={styles.userEmail}>{user.email}</span>
                   </div>
                 </div>
                 
-                <div className={styles.dropdownDivider}></div>
+                <div className={styles.dropdownMenu}>
+                  <Link href="/watchlist" className={styles.menuItem} onClick={() => setDropdownOpen(false)}>
+                    <div className={styles.menuIcon}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                      </svg>
+                    </div>
+                    <span>My Watchlist</span>
+                  </Link>
+                  
+                  <button className={styles.menuItem} onClick={() => { setDropdownOpen(false); setIsProfileOpen(true); }}>
+                    <div className={styles.menuIcon}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                    </div>
+                    <span>Personalize Profile</span>
+                  </button>
 
-                <Link href="/watchlist" className={styles.dropdownItem} onClick={() => setDropdownOpen(false)}>
-                  <div className={styles.itemIcon}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                    </svg>
-                  </div>
-                  My Watchlist
-                </Link>
-                
-                <button className={styles.dropdownItem} onClick={() => { setDropdownOpen(false); setIsProfileOpen(true); }}>
-                  <div className={styles.itemIcon}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                  </div>
-                  Edit Profile
-                </button>
+                  <div className={styles.menuDivider}></div>
+                  
+                  <button onClick={handleLogout} className={`${styles.menuItem} ${styles.logoutAction}`}>
+                    <div className={styles.menuIcon}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                      </svg>
+                    </div>
+                    <span>Terminate Session</span>
+                  </button>
 
-                <div className={styles.dropdownDivider}></div>
-                
-                <button onClick={handleLogout} className={`${styles.dropdownItem} ${styles.logoutBtn}`}>
-                  <div className={styles.itemIcon}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                      <polyline points="16 17 21 12 16 7"></polyline>
-                      <line x1="21" y1="12" x2="9" y2="12"></line>
-                    </svg>
-                  </div>
-                  Logout
-                </button>
-
-                <button onClick={handleDeleteProfile} className={`${styles.dropdownItem} ${styles.deleteBtn}`}>
-                  <div className={styles.itemIcon}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="3 6 5 6 21 6"></polyline>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    </svg>
-                  </div>
-                  Delete Profile
-                </button>
+                  <button onClick={handleDeleteProfile} className={`${styles.menuItem} ${styles.dangerAction}`}>
+                    <div className={styles.menuIcon}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                    </div>
+                    <span>Wipe Data Vault</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -305,12 +328,35 @@ const Navbar = () => {
         </button>
 
         <div className={styles.mobileContent}>
-          <Link href="/browse" className={styles.mobileLink} onClick={() => setIsOpen(false)}>Browse</Link>
-          <Link href="/series" className={styles.mobileLink} onClick={() => setIsOpen(false)}>Series</Link>
-          <Link href="/trending" className={styles.mobileLink} onClick={() => setIsOpen(false)}>Trending Now</Link>
-          <Link href="/request" className={styles.mobileLink} onClick={() => setIsOpen(false)}>Request</Link>
-          <Link href="/watchlist" className={styles.mobileLink} onClick={() => setIsOpen(false)}>Watchlist</Link>
-          <Link href="/admin" className={styles.mobileLink} onClick={() => setIsOpen(false)}>Admin Panel</Link>
+          {/* Mobile Search */}
+          <form onSubmit={handleSearch} className={styles.mobileSearchContainer}>
+            <div className={styles.mobileSearchInputWrapper}>
+              <svg className={styles.mobileInputIcon} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input 
+                type="text" 
+                placeholder="Search titles..." 
+                className={styles.mobileSearchBox}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <button type="submit" className={styles.mobileSearchBtn}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </button>
+          </form>
+
+          <Link href="/browse" className={styles.mobileLink} style={{ transitionDelay: '0.1s' }} onClick={() => setIsOpen(false)}>Browse Library</Link>
+          <Link href="/series" className={styles.mobileLink} style={{ transitionDelay: '0.15s' }} onClick={() => setIsOpen(false)}>Series & Shows</Link>
+          <Link href="/trending" className={styles.mobileLink} style={{ transitionDelay: '0.2s' }} onClick={() => setIsOpen(false)}>Trending Now</Link>
+          <Link href="/request" className={styles.mobileLink} style={{ transitionDelay: '0.25s' }} onClick={() => setIsOpen(false)}>Request Content</Link>
+          <Link href="/watchlist" className={styles.mobileLink} style={{ transitionDelay: '0.3s' }} onClick={() => setIsOpen(false)}>My Watchlist</Link>
+          <Link href="/admin" className={styles.mobileLink} style={{ transitionDelay: '0.35s' }} onClick={() => setIsOpen(false)}>Admin Dashboard</Link>
           
           <div className={styles.mobileFooter}>
             {user ? (

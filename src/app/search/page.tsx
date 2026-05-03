@@ -53,8 +53,8 @@ export default async function SearchPage({
         {results.length > 0 ? (
           <div style={{ 
             display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', 
-            gap: '30px', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(clamp(130px, 20vw, 200px), 1fr))', 
+            gap: 'clamp(15px, 3vw, 30px)', 
             padding: '0 5%' 
           }}>
             {results.map((movie) => (
