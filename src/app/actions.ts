@@ -2,6 +2,7 @@
 
 import { getMovieDetails } from "@/lib/tmdb";
 import { supabase } from "@/lib/supabase";
+import { revalidatePath } from "next/cache";
 
 // 1. Auto-Complete Preview Action
 export async function fetchTmdbPreview(tmdbId: string, type: 'movie' | 'tv') {
@@ -275,5 +276,27 @@ export async function markNotificationAsRead(notifId: string) {
     return { success: !error };
   } catch (error) {
     return { success: false };
+  }
+}
+
+// 12. Add Movie to Vault Action
+export async function addMovieToVault(tmdbId: string, teraboxLink: string, type: 'movie' | 'tv') {
+  try {
+    const { error } = await supabase.from('movies').insert([{ 
+      tmdb_id: tmdbId, 
+      terabox_link: teraboxLink, 
+      type: type 
+    }]);
+
+    if (!error) {
+      // Trigger revalidation for the home page and other relevant routes
+      revalidatePath('/');
+      revalidatePath('/browse');
+      revalidatePath('/trending');
+      return { success: true };
+    }
+    return { success: false, error: error.message };
+  } catch (error: any) {
+    return { success: false, error: error.message };
   }
 }

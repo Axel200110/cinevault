@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   description: 'Filter and browse our extensive library of movies and TV shows.',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function BrowsePage() {
   const { data: sources, error } = await supabase
     .from('movies')

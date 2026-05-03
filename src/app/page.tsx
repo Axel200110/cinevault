@@ -5,6 +5,8 @@ import { getMovieDetails, MovieDetails, getTrending, getUpcoming } from "@/lib/t
 import styles from "./page.module.css";
 import Link from "next/link";
 
+export const dynamic = 'force-dynamic';
+
 export default async function Home() {
   // Fetch movie IDs and links from Supabase
   let { data: movieSources, error } = await supabase

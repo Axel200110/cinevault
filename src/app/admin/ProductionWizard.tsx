@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from './admin.module.css';
 import { supabase } from '@/lib/supabase';
-import { searchMultiAction, fetchTvDetails } from '@/app/actions';
+import { searchMultiAction, fetchTvDetails, addMovieToVault } from '@/app/actions';
 
 interface MoviePreview {
   id: string;
@@ -131,14 +131,10 @@ export default function ProductionWizard({ onSuccess, showToast }: ProductionWiz
       finalLink = JSON.stringify(tvEpisodes.filter(ep => ep.link));
     }
 
-    const { error } = await supabase.from('movies').insert([{ 
-      tmdb_id: tmdbId, 
-      terabox_link: finalLink, 
-      type: contentType 
-    }]);
-
-    if (error) {
-      showToast('Production Failed', error.message, 'error');
+    const result = await addMovieToVault(tmdbId, finalLink, contentType);
+    
+    if (!result.success) {
+      showToast('Production Failed', result.error || 'Unknown error', 'error');
     } else {
       showToast('Mission Accomplished', `${selectedMovie?.title} is now live!`, 'success');
       resetWizard();
