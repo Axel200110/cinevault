@@ -734,7 +734,7 @@ export default function AdminPage() {
                             {req.status === 'pending' && (
                               <button 
                                 className={styles.saveBtn}
-                                onClick={() => handleFulfillRequest(req.id, req.tmdb_id, req.type, req.user_id)}
+                                onClick={() => handleFulfillRequest(req.id, req.tmdb_id, req.type)}
                               >
                                 Fulfill
                               </button>
