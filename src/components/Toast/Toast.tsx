@@ -33,6 +33,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     const id = Math.random().toString(36).substr(2, 9);
     setToasts(prev => [...prev, { id, title, message, type }]);
     
+    // Automatically scroll to top to ensure toast visibility
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 5000);

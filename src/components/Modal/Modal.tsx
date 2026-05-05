@@ -28,11 +28,17 @@ const Modal: React.FC<ModalProps> = ({
 }) => {
   const [inputValue, setInputValue] = useState(defaultValue);
   const [isAnimating, setIsAnimating] = useState(false);
+  const modalRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       setIsAnimating(true);
       setInputValue(defaultValue);
+      
+      // Small delay to ensure the animation/render is ready
+      setTimeout(() => {
+        modalRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
     } else {
       setTimeout(() => setIsAnimating(false), 300);
     }
@@ -50,6 +56,7 @@ const Modal: React.FC<ModalProps> = ({
   return (
     <div className={`${styles.overlay} ${isOpen ? styles.overlayVisible : ''}`} onClick={onClose}>
       <div 
+        ref={modalRef}
         className={`${styles.modal} ${isOpen ? styles.modalVisible : ''} ${styles[type]}`}
         onClick={(e) => e.stopPropagation()}
       >

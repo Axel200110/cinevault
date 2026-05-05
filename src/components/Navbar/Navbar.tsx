@@ -351,12 +351,42 @@ const Navbar = () => {
             </button>
           </form>
 
-          <Link href="/browse" className={styles.mobileLink} style={{ transitionDelay: '0.1s' }} onClick={() => setIsOpen(false)}>Browse Library</Link>
-          <Link href="/series" className={styles.mobileLink} style={{ transitionDelay: '0.15s' }} onClick={() => setIsOpen(false)}>Series & Shows</Link>
-          <Link href="/trending" className={styles.mobileLink} style={{ transitionDelay: '0.2s' }} onClick={() => setIsOpen(false)}>Trending Now</Link>
-          <Link href="/request" className={styles.mobileLink} style={{ transitionDelay: '0.25s' }} onClick={() => setIsOpen(false)}>Request Content</Link>
-          <Link href="/watchlist" className={styles.mobileLink} style={{ transitionDelay: '0.3s' }} onClick={() => setIsOpen(false)}>My Watchlist</Link>
-          <Link href="/admin" className={styles.mobileLink} style={{ transitionDelay: '0.35s' }} onClick={() => setIsOpen(false)}>Admin Dashboard</Link>
+          <Link href="/browse" className={styles.mobileLink} style={{ transitionDelay: '0.1s' }} onClick={() => setIsOpen(false)}>
+            <div className={styles.mobileLinkContent}>
+              <div className={styles.mobileLinkIcon}>🎬</div>
+              <span>Browse Library</span>
+            </div>
+          </Link>
+          <Link href="/series" className={styles.mobileLink} style={{ transitionDelay: '0.15s' }} onClick={() => setIsOpen(false)}>
+            <div className={styles.mobileLinkContent}>
+              <div className={styles.mobileLinkIcon}>📺</div>
+              <span>Series & Shows</span>
+            </div>
+          </Link>
+          <Link href="/trending" className={styles.mobileLink} style={{ transitionDelay: '0.2s' }} onClick={() => setIsOpen(false)}>
+            <div className={styles.mobileLinkContent}>
+              <div className={styles.mobileLinkIcon}>🔥</div>
+              <span>Trending Now</span>
+            </div>
+          </Link>
+          <Link href="/request" className={styles.mobileLink} style={{ transitionDelay: '0.25s' }} onClick={() => setIsOpen(false)}>
+            <div className={styles.mobileLinkContent}>
+              <div className={styles.mobileLinkIcon}>💎</div>
+              <span>Request Content</span>
+            </div>
+          </Link>
+          <Link href="/watchlist" className={styles.mobileLink} style={{ transitionDelay: '0.3s' }} onClick={() => setIsOpen(false)}>
+            <div className={styles.mobileLinkContent}>
+              <div className={styles.mobileLinkIcon}>🔖</div>
+              <span>My Watchlist</span>
+            </div>
+          </Link>
+          <Link href="/admin" className={styles.mobileLink} style={{ transitionDelay: '0.35s' }} onClick={() => setIsOpen(false)}>
+            <div className={styles.mobileLinkContent}>
+              <div className={styles.mobileLinkIcon}>⚡</div>
+              <span>Admin Dashboard</span>
+            </div>
+          </Link>
           
           <div className={styles.mobileFooter}>
             {user ? (

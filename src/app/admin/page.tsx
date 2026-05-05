@@ -51,6 +51,7 @@ export default function AdminPage() {
 
   const showToast = (title: string, msg: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ title, msg, type });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     setTimeout(() => setToast(null), 4000);
   };
 
@@ -99,6 +100,11 @@ export default function AdminPage() {
     type: 'info',
     onConfirm: () => {},
   });
+
+  // Modal state effect removed scroll logic to prevent jumpy UI
+  useEffect(() => {
+    // We can add focus management here if needed
+  }, [modal.isOpen]);
 
   useEffect(() => {
     // Check local storage for existing session
@@ -1131,7 +1137,7 @@ export default function AdminPage() {
                         </td>
                         <td>
                           {comment.rating ? (
-                            <span className={styles.ratingBadge}>⭐ {comment.rating}</span>
+                            <span className={styles.ratingBadge}><span>⭐</span> {comment.rating}</span>
                           ) : 'N/A'}
                         </td>
                         <td className={styles.actionCell}>
@@ -1331,7 +1337,10 @@ export default function AdminPage() {
         defaultValue={modal.defaultValue}
         placeholder={modal.placeholder}
         onClose={() => setModal(prev => ({ ...prev, isOpen: false }))}
-        onConfirm={modal.onConfirm}
+        onConfirm={(val) => {
+          modal.onConfirm(val);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
       />
     </main>
   );
