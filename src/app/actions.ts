@@ -431,10 +431,61 @@ export async function cleanupBrokenLinkReports() {
   }
 }
 
-export async function cleanupUserRequests() {
+export async function cleanupUserRequests(mode: 'fulfilled' | 'all' = 'fulfilled') {
   try {
-    const { error } = await supabase.from('user_requests').delete().eq('status', 'fulfilled');
+    let query = supabase.from('user_requests').update({ status: 'archived' });
+    
+    if (mode === 'fulfilled') {
+      query = query.eq('status', 'fulfilled');
+    } else {
+      // For 'all', archive all that aren't already archived
+      query = query.neq('status', 'archived');
+    }
+    
+    const { error } = await query;
+    if (error) throw error;
+    
     revalidatePath('/admin');
+    return { success: true };
+  } catch (error: any) {
+    console.error("Archive failed:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteUserRequest(requestId: string) {
+  try {
+    const { error } = await supabase
+      .from('user_requests')
+      .update({ status: 'archived' })
+      .eq('id', requestId);
+      
+    revalidatePath('/admin');
+    return { success: !error };
+  } catch (error) {
+    return { success: false };
+  }
+}
+
+// 15. Watchlist Actions
+export async function addToWatchlist(userId: string, tmdbId: string, type: 'movie' | 'tv') {
+  try {
+    const { error } = await supabase
+      .from('watchlists')
+      .upsert([{ user_id: userId, movie_id: tmdbId, type: type }], { onConflict: 'user_id, movie_id' });
+    return { success: !error };
+  } catch (error) {
+    return { success: false };
+  }
+}
+
+export async function removeFromWatchlist(userId: string, tmdbId: string) {
+  try {
+    const { error } = await supabase
+      .from('watchlists')
+      .delete()
+      .eq('user_id', userId)
+      .eq('movie_id', tmdbId);
     return { success: !error };
   } catch (error) {
     return { success: false };

@@ -5,9 +5,10 @@ import { MovieDetails } from '@/lib/tmdb';
 
 interface Props {
   movie: MovieDetails;
+  onRemove?: () => void;
 }
 
-const MovieCard = ({ movie }: Props) => {
+const MovieCard = ({ movie, onRemove }: Props) => {
   return (
     <div className={styles.card}>
       <div className={styles.posterContainer}>
@@ -21,6 +22,19 @@ const MovieCard = ({ movie }: Props) => {
           >
             View Details
           </Link>
+          {onRemove && (
+            <button 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onRemove();
+              }}
+              className={styles.removeBtn}
+              title="Remove from Watchlist"
+            >
+              ✕
+            </button>
+          )}
         </div>
       </div>
       

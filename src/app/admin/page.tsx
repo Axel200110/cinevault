@@ -6,7 +6,8 @@ import { supabase } from '@/lib/supabase';
 import styles from './admin.module.css';
 import ProductionWizard from './ProductionWizard';
 import AnalyticsChart from './AnalyticsChart';
-import { fetchTmdbPreview, checkLinkStatus, searchTmdb, fetchTitlesForAnalytics, resolveReport, deleteComment, createNotification, addMovieToVault, updateMovieAction, cleanupBrokenLinkReports, cleanupUserRequests } from '@/app/actions';
+import { fetchTmdbPreview, checkLinkStatus, searchTmdb, fetchTitlesForAnalytics, resolveReport, deleteComment, createNotification, addMovieToVault, updateMovieAction, cleanupBrokenLinkReports, cleanupUserRequests, deleteUserRequest } from '@/app/actions';
+import Modal from '@/components/Modal/Modal';
 
 interface MovieRow {
   id: string;
@@ -74,6 +75,23 @@ export default function AdminPage() {
   const [announcementText, setAnnouncementText] = useState('');
   const [announcementEnabled, setAnnouncementEnabled] = useState(false);
 
+  // Modal State
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'info' | 'confirm' | 'prompt' | 'danger';
+    onConfirm: (val?: string) => void;
+    defaultValue?: string;
+    placeholder?: string;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info',
+    onConfirm: () => {},
+  });
+
   useEffect(() => {
     // Check local storage for existing session
     const authSession = localStorage.getItem('admin_session');
@@ -95,7 +113,11 @@ export default function AdminPage() {
     };
 
     const fetchUserRequests = async () => {
-      const { data } = await supabase.from('user_requests').select('*').order('created_at', { ascending: false });
+      const { data } = await supabase
+        .from('user_requests')
+        .select('*')
+        .neq('status', 'archived')
+        .order('created_at', { ascending: false });
       if (data) setUserRequests(data);
     };
 
@@ -181,18 +203,23 @@ export default function AdminPage() {
   };
 
   const handleSaveEdit = async (id: string) => {
-    if (!window.confirm('Are you sure you want to save these changes?')) return;
-
-    const result = await updateMovieAction(id, editTmdbId, editLink, editType as 'movie' | 'tv');
-
-    if (result.success) {
-      setEditingId(null);
-      fetchMovies();
-      fetchReports(); // Refresh reports too since some might have been resolved
-      showToast('Library Updated', 'The content details have been modified and users notified.', 'success');
-    } else {
-      showToast('Update Failed', result.error || 'Could not update record.', 'error');
-    }
+    setModal({
+      isOpen: true,
+      title: 'Save Changes',
+      message: 'Are you sure you want to save these modifications to the library?',
+      type: 'confirm',
+      onConfirm: async () => {
+        const result = await updateMovieAction(id, editTmdbId, editLink, editType as 'movie' | 'tv');
+        if (result.success) {
+          setEditingId(null);
+          fetchMovies();
+          fetchReports(); 
+          showToast('Library Updated', 'The content details have been modified.', 'success');
+        } else {
+          showToast('Update Failed', result.error || 'Could not update record.', 'error');
+        }
+      }
+    });
   };
 
 
@@ -272,6 +299,7 @@ export default function AdminPage() {
     const { data, count } = await supabase
       .from('user_requests')
       .select('*', { count: 'exact' })
+      .neq('status', 'archived')
       .order('created_at', { ascending: false })
       .limit(requestsLimit);
 
@@ -282,10 +310,17 @@ export default function AdminPage() {
   };
 
   const handleDeleteComment = async (id: string) => {
-    if (!window.confirm('Delete this review permanently?')) return;
-    await deleteComment(id);
-    fetchComments();
-    showToast('Review Removed', 'The community post has been deleted.', 'info');
+    setModal({
+      isOpen: true,
+      title: 'Delete Review',
+      message: 'This will permanently remove this community post. Proceed?',
+      type: 'danger',
+      onConfirm: async () => {
+        await deleteComment(id);
+        fetchComments();
+        showToast('Review Removed', 'The post has been deleted.', 'info');
+      }
+    });
   };
 
   const handleResolveReport = async (id: string, userId?: string, movieId?: string) => {
@@ -301,41 +336,83 @@ export default function AdminPage() {
 
 
   const handleFulfillRequest = async (requestId: string, tmdbId: string, type: string) => {
-    const fulfillLink = window.prompt("Enter the Terabox link for this requested movie:");
-    if (!fulfillLink) return;
-
-    // Use the central action which handles insertion, revalidation, and notifications
-    const result = await addMovieToVault(tmdbId, fulfillLink, type as 'movie' | 'tv');
-
-    if (result.success) {
-      showToast('Request Fulfilled', 'The movie has been added and users notified.', 'success');
-      fetchUserRequests();
-      fetchMovies();
-    } else {
-      showToast('Fulfill Failed', result.error || 'Could not add to library.', 'error');
-    }
+    setModal({
+      isOpen: true,
+      title: 'Fulfill Request',
+      message: 'Please provide the Terabox link for this content:',
+      type: 'prompt',
+      placeholder: 'https://1024terabox.com/s/...',
+      onConfirm: async (fulfillLink) => {
+        if (!fulfillLink) return;
+        const result = await addMovieToVault(tmdbId, fulfillLink, type as 'movie' | 'tv');
+        if (result.success) {
+          showToast('Request Fulfilled', 'Movie added and users notified.', 'success');
+          fetchUserRequests();
+          fetchMovies();
+        } else {
+          showToast('Fulfill Failed', result.error || 'Could not add to library.', 'error');
+        }
+      }
+    });
   };
 
   const handleCleanupReports = async () => {
-    if (!window.confirm('Delete all resolved reports permanently from the archive?')) return;
-    const result = await cleanupBrokenLinkReports();
-    if (result.success) {
-      fetchReports();
-      showToast('Archive Cleared', 'All resolved reports have been removed.', 'success');
-    } else {
-      showToast('Cleanup Failed', 'Could not clear the archive.', 'error');
-    }
+    setModal({
+      isOpen: true,
+      title: 'Clear Report Archive',
+      message: 'This will permanently delete all resolved reports. Continue?',
+      type: 'danger',
+      onConfirm: async () => {
+        const result = await cleanupBrokenLinkReports();
+        if (result.success) {
+          fetchReports();
+          showToast('Archive Cleared', 'All resolved reports have been removed.', 'success');
+        } else {
+          showToast('Cleanup Failed', 'Could not clear the archive.', 'error');
+        }
+      }
+    });
   };
 
   const handleCleanupRequests = async () => {
-    if (!window.confirm('Delete all fulfilled requests permanently from the archive?')) return;
-    const result = await cleanupUserRequests();
-    if (result.success) {
-      fetchUserRequests();
-      showToast('Archive Cleared', 'All fulfilled requests have been removed.', 'success');
-    } else {
-      showToast('Cleanup Failed', 'Could not clear the archive.', 'error');
-    }
+    const hasFulfilled = userRequests.some(r => r.status === 'fulfilled');
+    const mode = hasFulfilled ? 'fulfilled' : 'all';
+    
+    setModal({
+      isOpen: true,
+      title: mode === 'fulfilled' ? 'Archive Fulfilled' : 'Archive All Requests',
+      message: mode === 'fulfilled' 
+        ? 'Are you sure you want to archive all fulfilled requests?' 
+        : 'This will archive ALL pending requests. Continue?',
+      type: 'danger',
+      onConfirm: async () => {
+        const result = await cleanupUserRequests(mode);
+        if (result.success) {
+          fetchUserRequests();
+          showToast('Archive Cleared', mode === 'fulfilled' ? 'Fulfilled requests hidden.' : 'All requests hidden.', 'success');
+        } else {
+          showToast('Cleanup Failed', result.error || 'Could not update archive.', 'error');
+        }
+      }
+    });
+  };
+
+  const handleDeleteRequest = async (requestId: string) => {
+    setModal({
+      isOpen: true,
+      title: 'Dismiss Request',
+      message: 'Are you sure you want to dismiss this user request?',
+      type: 'danger',
+      onConfirm: async () => {
+        const result = await deleteUserRequest(requestId);
+        if (result.success) {
+          fetchUserRequests();
+          showToast('Request Dismissed', 'The item has been archived.', 'success');
+        } else {
+          showToast('Action Failed', 'Could not dismiss the request.', 'error');
+        }
+      }
+    });
   };
 
   const handleUpdatePassword = (e: React.FormEvent) => {
@@ -351,15 +428,21 @@ export default function AdminPage() {
 
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('WARNING: Are you sure you want to permanently remove this content? This action cannot be undone.')) return;
-
-    const { error } = await supabase.from('movies').delete().eq('id', id);
-    if (!error) {
-      fetchMovies();
-      showToast('Content Removed', 'The item has been deleted from your library.', 'info');
-    } else {
-      showToast('Delete Failed', error.message, 'error');
-    }
+    setModal({
+      isOpen: true,
+      title: 'Remove Content',
+      message: 'WARNING: This will permanently delete this title from your library. This action cannot be undone.',
+      type: 'danger',
+      onConfirm: async () => {
+        const { error } = await supabase.from('movies').delete().eq('id', id);
+        if (!error) {
+          fetchMovies();
+          showToast('Content Removed', 'Item deleted from library.', 'info');
+        } else {
+          showToast('Delete Failed', error.message, 'error');
+        }
+      }
+    });
   };
 
   const handleCheckLink = async (id: string, url: string) => {
@@ -688,8 +771,16 @@ export default function AdminPage() {
                           <tr>
                             <td>
                               <div className={styles.adminTableContent}>
-                                <img src={movie.posterUrl || 'https://via.placeholder.com/40x60'} alt="" className={styles.adminTablePoster} />
-                                <span className={styles.adminTableTitle}>{movie.title || 'Unknown Title'}</span>
+                                {movie.posterUrl ? (
+                                  <img src={movie.posterUrl} alt="" className={styles.adminTablePoster} />
+                                ) : (
+                                  <div className={styles.shimmerPoster} />
+                                )}
+                                {movie.title ? (
+                                  <span className={styles.adminTableTitle}>{movie.title}</span>
+                                ) : (
+                                  <div className={styles.shimmerTitle} />
+                                )}
                               </div>
                             </td>
                             <td>{movie.tmdb_id}</td>
@@ -894,9 +985,9 @@ export default function AdminPage() {
             <div className={styles.card}>
               <div className={styles.cardHeaderWithAction}>
                 <h2 className={styles.cardTitle}>📬 User Content Requests</h2>
-                {userRequests.some(r => r.status === 'fulfilled') && (
+                {userRequests.length > 0 && (
                   <button className={styles.cleanupBtn} onClick={handleCleanupRequests}>
-                    Clear Fulfilled
+                    {userRequests.some(r => r.status === 'fulfilled') ? 'Clear Fulfilled' : 'Clear All'}
                   </button>
                 )}
               </div>
@@ -914,16 +1005,16 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {userRequests.map((req) => (
-                      <tr key={req.id}>
+                    {userRequests.map((request) => (
+                      <tr key={request.id}>
                         <td style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <img src={req.poster_url || 'https://via.placeholder.com/50x75?text=No+Img'} alt={req.title} style={{ width: '40px', borderRadius: '4px' }} />
-                          {req.title}
+                          <img src={request.poster_url || 'https://via.placeholder.com/50x75?text=No+Img'} alt={request.title} style={{ width: '40px', borderRadius: '4px' }} />
+                          {request.title}
                         </td>
-                        <td style={{ textTransform: 'capitalize' }}>{req.type}</td>
-                        <td>{new Date(req.created_at).toLocaleDateString()}</td>
+                        <td style={{ textTransform: 'capitalize' }}>{request.type}</td>
+                        <td>{new Date(request.created_at).toLocaleDateString()}</td>
                         <td>
-                          {req.status === 'pending' ? (
+                          {request.status === 'pending' ? (
                             <span className={styles.statusBroken}>Pending</span>
                           ) : (
                             <span className={styles.statusActive}>Fulfilled</span>
@@ -931,12 +1022,27 @@ export default function AdminPage() {
                         </td>
                         <td className={styles.actionCell}>
                           <div className={styles.actionGroup}>
-                            {req.status === 'pending' && (
+                            {request.status === 'pending' ? (
+                              <>
+                                <button
+                                  className={styles.saveBtn}
+                                  onClick={() => handleFulfillRequest(request.id, request.tmdb_id, request.type)}
+                                >
+                                  Fulfill
+                                </button>
+                                <button
+                                  className={styles.deleteBtn}
+                                  onClick={() => handleDeleteRequest(request.id)}
+                                >
+                                  Dismiss
+                                </button>
+                              </>
+                            ) : (
                               <button
-                                className={styles.saveBtn}
-                                onClick={() => handleFulfillRequest(req.id, req.tmdb_id, req.type)}
+                                className={styles.deleteBtn}
+                                onClick={() => handleDeleteRequest(request.id)}
                               >
-                                Fulfill
+                                Remove
                               </button>
                             )}
                           </div>
@@ -1195,6 +1301,17 @@ export default function AdminPage() {
           )}
         </div>
       </div>
+
+      <Modal 
+        isOpen={modal.isOpen}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+        defaultValue={modal.defaultValue}
+        placeholder={modal.placeholder}
+        onClose={() => setModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={modal.onConfirm}
+      />
     </main>
   );
 }

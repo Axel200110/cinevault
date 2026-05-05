@@ -5,14 +5,30 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar/Navbar';
 import MovieGrid from '@/components/MovieGrid/MovieGrid';
-import { fetchTitlesForAnalytics } from '@/app/actions';
+import { fetchTitlesForAnalytics, removeFromWatchlist } from '@/app/actions';
 import styles from './watchlist.module.css';
+import Modal from '@/components/Modal/Modal';
 
 export default function WatchlistPage() {
   const [user, setUser] = useState<any>(null);
   const [movies, setMovies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  // Modal State
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'confirm' | 'danger';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'confirm',
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     const loadWatchlist = async () => {
@@ -56,6 +72,38 @@ export default function WatchlistPage() {
     loadWatchlist();
   }, [router]);
 
+  const handleRemove = async (movieId: string) => {
+    if (!user) return;
+    setModal({
+      isOpen: true,
+      title: 'Remove from Watchlist',
+      message: 'Are you sure you want to remove this title from your watchlist?',
+      type: 'danger',
+      onConfirm: async () => {
+        const result = await removeFromWatchlist(user.id, movieId);
+        if (result.success) {
+          setMovies(prev => prev.filter(m => m.id !== movieId));
+        }
+      }
+    });
+  };
+
+  const handleClearAll = async () => {
+    if (!user) return;
+    setModal({
+      isOpen: true,
+      title: 'Clear Entire Watchlist',
+      message: 'This will remove ALL movies from your watchlist. This action cannot be undone. Are you sure?',
+      type: 'danger',
+      onConfirm: async () => {
+        const { error } = await supabase.from('watchlists').delete().eq('user_id', user.id);
+        if (!error) {
+          setMovies([]);
+        }
+      }
+    });
+  };
+
   if (loading) {
     return (
       <main className={styles.main}>
@@ -72,12 +120,17 @@ export default function WatchlistPage() {
       <Navbar />
       <div className={styles.container}>
         <div className={styles.header}>
-          <h1 className={styles.title}>My Watchlist</h1>
-          <div className={styles.divider}></div>
+          <div className={styles.titleGroup}>
+            <h1 className={styles.title}>My Watchlist</h1>
+            <div className={styles.divider}></div>
+          </div>
+          {movies.length > 0 && (
+            <button onClick={handleClearAll} className={styles.clearBtn}>Clear All</button>
+          )}
         </div>
         
         {movies.length > 0 ? (
-          <MovieGrid movies={movies} />
+          <MovieGrid movies={movies} onRemove={handleRemove} />
         ) : (
           <div className={styles.emptyState}>
             <p>Your watchlist is empty.</p>
@@ -85,6 +138,15 @@ export default function WatchlistPage() {
           </div>
         )}
       </div>
+
+      <Modal 
+        isOpen={modal.isOpen}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+        onClose={() => setModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={modal.onConfirm}
+      />
     </main>
   );
 }

@@ -15,8 +15,10 @@ import { fetchTrafficLogs } from '@/app/actions';
 export default function AnalyticsChart() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const load = async () => {
       const logs = await fetchTrafficLogs();
       // Format date for display
@@ -30,13 +32,17 @@ export default function AnalyticsChart() {
     load();
   }, []);
 
-  if (loading) return <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading Intelligence...</div>;
-  if (data.length === 0) return <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)' }}>No traffic intelligence available yet.</div>;
+  if (!mounted) return null;
+  if (loading) return <div style={{ height: '350px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading Intelligence...</div>;
+  if (data.length === 0) return <div style={{ height: '350px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.4)' }}>No traffic intelligence available yet.</div>;
 
   return (
-    <div style={{ width: '100%', height: 350, marginTop: '20px', background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data}>
+    <div style={{ width: '100%', height: 350, minHeight: 350, marginTop: '20px', background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+      <ResponsiveContainer width="99%" height="100%" minWidth={0}>
+        <AreaChart 
+          data={data}
+          margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+        >
           <defs>
             <linearGradient id="colorClicks" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#e11d48" stopOpacity={0.3}/>
