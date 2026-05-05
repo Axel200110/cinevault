@@ -56,10 +56,10 @@ export default async function MoviesPage({
       </div>
       <section className={styles.content}>
         <MovieGrid movies={validDetails} />
-        <Pagination 
-          currentPage={currentPage} 
-          totalPages={totalPages} 
-          baseUrl="/movies" 
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          baseUrl="/movies"
         />
       </section>
     </main>

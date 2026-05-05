@@ -31,7 +31,7 @@ export default function WatchlistPage() {
     itemTitle: '',
     posterUrl: '',
     type: 'confirm',
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   useEffect(() => {
@@ -57,7 +57,7 @@ export default function WatchlistPage() {
           type: item.type,
           clicks: 0
         }));
-        
+
         const enriched = await fetchTitlesForAnalytics(mappedData);
         // Map it to look like what MovieGrid expects
         const gridData = enriched.map(item => ({
@@ -135,7 +135,7 @@ export default function WatchlistPage() {
             <button onClick={handleClearAll} className={styles.clearBtn}>Clear All</button>
           )}
         </div>
-        
+
         {movies.length > 0 ? (
           <MovieGrid movies={movies} onRemove={handleRemove} />
         ) : (
@@ -146,7 +146,7 @@ export default function WatchlistPage() {
         )}
       </div>
 
-      <Modal 
+      <Modal
         isOpen={modal.isOpen}
         title={modal.title}
         message={modal.message}

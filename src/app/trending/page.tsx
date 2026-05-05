@@ -9,7 +9,7 @@ export default async function TrendingPage() {
   return (
     <main className={styles.main}>
       <Navbar />
-      
+
       <div className={styles.pageContent}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.sectionTitle}>Trending Now</h2>
@@ -18,7 +18,7 @@ export default async function TrendingPage() {
           </p>
           <div className={styles.divider}></div>
         </div>
-        
+
         <MovieGrid movies={trending} />
       </div>
 

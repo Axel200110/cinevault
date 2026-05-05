@@ -4,7 +4,15 @@ import MovieGrid from '@/components/MovieGrid/MovieGrid';
 import Pagination from '@/components/Pagination/Pagination';
 import { supabase } from '@/lib/supabase';
 import { getMovieDetails, MovieDetails } from '@/lib/tmdb';
-import styles from "../page.module.css";
+import styles from './page.module.css';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'TV Series | CineVault',
+  description: 'Browse all TV series available in the CineVault library.',
+};
+
+export const dynamic = 'force-dynamic';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -26,7 +34,9 @@ export default async function SeriesPage({
     .order('created_at', { ascending: false })
     .range(from, to);
 
-  if (error) console.error('Error fetching series:', error);
+  if (error) {
+    console.error('Error fetching series:', error);
+  }
   
   const totalPages = Math.ceil((count || 0) / ITEMS_PER_PAGE);
 
@@ -41,12 +51,14 @@ export default async function SeriesPage({
     <main className={styles.main}>
       <Navbar />
       
-      <div className={`${styles.pageContent} ${styles.revealContent} ${styles.standalonePage}`}>
-        <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>TV Series</h2>
-          <div className={styles.divider}></div>
+      <div className={styles.hero}>
+        <div className={styles.heroContent}>
+          <h1 className={styles.heroTitle}>TV Series</h1>
+          <p className={styles.heroSubtitle}>Binge-watch the most acclaimed and trending television shows.</p>
         </div>
-        
+      </div>
+
+      <section className={styles.content}>
         {series.length > 0 ? (
           <>
             <MovieGrid movies={series} />
@@ -57,15 +69,12 @@ export default async function SeriesPage({
             />
           </>
         ) : (
-          <div style={{ padding: '5%', color: 'var(--foreground-muted)' }}>
-            <p>No series available yet. Add some in your Supabase dashboard!</p>
+          <div style={{ padding: '5%', color: 'var(--foreground-muted)', textAlign: 'center' }}>
+            <p>No series available yet. Check back later!</p>
           </div>
         )}
-      </div>
-
-      <footer className={styles.footer}>
-        <p>&copy; {new Date().getFullYear()} CineVault. Powered by Supabase & TMDb.</p>
-      </footer>
+      </section>
     </main>
   );
 }
+
