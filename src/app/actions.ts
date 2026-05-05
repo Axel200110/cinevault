@@ -15,17 +15,17 @@ export async function fetchTmdbPreview(tmdbId: string, type: 'movie' | 'tv') {
 // 1b. Search TMDb by Title Action
 export async function searchTmdb(query: string, type: 'movie' | 'tv') {
   if (!query || query.length < 2) return [];
-  
+
   const NEXT_PUBLIC_TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
   const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
   const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w92';
-  
+
   try {
     const endpoint = type === 'movie' ? 'search/movie' : 'search/tv';
     const response = await fetch(`${TMDB_BASE_URL}/${endpoint}?api_key=${NEXT_PUBLIC_TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&page=1`);
-    
+
     if (!response.ok) return [];
-    
+
     const data = await response.json();
     return data.results.slice(0, 5).map((m: any) => ({
       id: m.id.toString(),
@@ -40,17 +40,17 @@ export async function searchTmdb(query: string, type: 'movie' | 'tv') {
 
 export async function searchMultiAction(query: string) {
   if (!query || query.length < 1) return { results: [] };
-  
+
   const NEXT_PUBLIC_TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
   const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-  
+
   try {
     const response = await fetch(
       `${TMDB_BASE_URL}/search/multi?api_key=${NEXT_PUBLIC_TMDB_API_KEY}&language=en-US&query=${encodeURIComponent(query)}&page=1&include_adult=false`
     );
-    
+
     if (!response.ok) return { results: [] };
-    
+
     return await response.json();
   } catch (error) {
     return { results: [] };
@@ -63,7 +63,7 @@ export async function checkLinkStatus(url: string) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // Increase timeout to 15s
 
-    const response = await fetch(url, { 
+    const response = await fetch(url, {
       method: 'GET', // Use GET as some servers block or mishandle HEAD
       signal: controller.signal,
       headers: {
@@ -89,9 +89,9 @@ export async function incrementClickCount(tmdbId: string) {
   try {
     // 1. Update individual movie clicks
     const { data: movies } = await supabase.from('movies').select('id, clicks').eq('tmdb_id', tmdbId);
-    
+
     if (movies && movies.length > 0) {
-      const updates = movies.map(m => 
+      const updates = movies.map(m =>
         supabase.from('movies').update({ clicks: (m.clicks || 0) + 1 }).eq('id', m.id)
       );
       await Promise.all(updates);
@@ -123,17 +123,17 @@ export async function incrementClickCount(tmdbId: string) {
 export async function fetchTitlesForAnalytics(movies: any[]) {
   const NEXT_PUBLIC_TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
   const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-  
+
   const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
-  
+
   const results = await Promise.all(movies.map(async (m) => {
     try {
       const endpoint = m.type === 'movie' ? 'movie' : 'tv';
       const response = await fetch(`${TMDB_BASE_URL}/${endpoint}/${m.tmdb_id}?api_key=${NEXT_PUBLIC_TMDB_API_KEY}&language=en-US`);
       if (response.ok) {
         const data = await response.json();
-        return { 
-          ...m, 
+        return {
+          ...m,
           title: data.title || data.name,
           posterUrl: data.poster_path ? `${IMAGE_BASE_URL}${data.poster_path}` : null,
           rating: data.vote_average ? parseFloat(data.vote_average.toFixed(1)) : 0,
@@ -145,7 +145,7 @@ export async function fetchTitlesForAnalytics(movies: any[]) {
       return { ...m, title: 'Unknown Title', posterUrl: null };
     }
   }));
-  
+
   return results;
 }
 
@@ -154,7 +154,7 @@ export async function reportBrokenLink(tmdbId: string, userId?: string) {
   try {
     const payload: any = { movie_id: tmdbId };
     if (userId) payload.user_id = userId;
-    
+
     const { error } = await supabase.from('reports').insert([payload]);
     return { success: !error };
   } catch (error) {
@@ -167,7 +167,7 @@ export async function reportBrokenLink(tmdbId: string, userId?: string) {
 export async function resolveReport(reportId: string, userId?: string, movieId?: string) {
   try {
     const { error } = await supabase.from('reports').update({ status: 'resolved' }).eq('id', reportId);
-    
+
     if (!error && userId) {
       await createNotification(
         userId,
@@ -176,7 +176,7 @@ export async function resolveReport(reportId: string, userId?: string, movieId?:
         movieId ? `/title/movie/${movieId}` : undefined
       );
     }
-    
+
     return { success: !error };
   } catch (error) {
     return { success: false };
@@ -197,12 +197,12 @@ export async function deleteComment(commentId: string) {
 export async function fetchTvDetails(tmdbId: string, season: number = 1) {
   const NEXT_PUBLIC_TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY;
   const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-  
+
   try {
     const response = await fetch(`${TMDB_BASE_URL}/tv/${tmdbId}?api_key=${NEXT_PUBLIC_TMDB_API_KEY}&language=en-US`);
     if (!response.ok) return null;
     const data = await response.json();
-    
+
     // Fetch episodes for requested season
     const sResponse = await fetch(`${TMDB_BASE_URL}/tv/${tmdbId}/season/${season}?api_key=${NEXT_PUBLIC_TMDB_API_KEY}&language=en-US`);
     let episodes = [];
@@ -214,7 +214,7 @@ export async function fetchTvDetails(tmdbId: string, season: number = 1) {
         link: ''
       }));
     }
-    
+
     return {
       seasonsCount: data.number_of_seasons,
       episodesCount: data.number_of_episodes,
@@ -305,10 +305,11 @@ export async function clearReadNotifications(userId: string) {
 // 12. Add Movie to Vault Action
 export async function addMovieToVault(tmdbId: string, teraboxLink: string, type: 'movie' | 'tv') {
   try {
-    const { error } = await supabase.from('movies').insert([{ 
-      tmdb_id: tmdbId, 
-      terabox_link: teraboxLink, 
-      type: type 
+    const { error } = await supabase.from('movies').insert([{
+      tmdb_id: tmdbId,
+      terabox_link: teraboxLink,
+      type: type,
+      clicks: 0
     }]);
 
     if (!error) {
@@ -434,17 +435,17 @@ export async function cleanupBrokenLinkReports() {
 export async function cleanupUserRequests(mode: 'fulfilled' | 'all' = 'fulfilled') {
   try {
     let query = supabase.from('user_requests').update({ status: 'archived' });
-    
+
     if (mode === 'fulfilled') {
       query = query.eq('status', 'fulfilled');
     } else {
       // For 'all', archive all that aren't already archived
       query = query.neq('status', 'archived');
     }
-    
+
     const { error } = await query;
     if (error) throw error;
-    
+
     revalidatePath('/admin');
     return { success: true };
   } catch (error: any) {
@@ -459,7 +460,7 @@ export async function deleteUserRequest(requestId: string) {
       .from('user_requests')
       .update({ status: 'archived' })
       .eq('id', requestId);
-      
+
     revalidatePath('/admin');
     return { success: !error };
   } catch (error) {

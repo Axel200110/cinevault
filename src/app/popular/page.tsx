@@ -29,7 +29,7 @@ export default async function PopularPage({
   const { data: sources, count, error } = await supabase
     .from('movies')
     .select('*', { count: 'exact' })
-    .order('clicks', { ascending: false })
+    .order('clicks', { ascending: false, nullsFirst: false })
     .range(from, to);
 
   if (error) {
@@ -39,7 +39,7 @@ export default async function PopularPage({
   const totalPages = Math.ceil((count || 0) / ITEMS_PER_PAGE);
 
   // Fetch full details
-  const promises = (sources || []).map(s => getMovieDetails(s.tmdb_id, s.type as 'movie' | 'tv'));
+  const promises = (sources || []).map(s => getMovieDetails(s.tmdb_id, s.terabox_link, s.type as 'movie' | 'tv'));
   const allDetails = await Promise.all(promises);
   const validDetails = allDetails.filter((m): m is MovieDetails => m !== null);
 

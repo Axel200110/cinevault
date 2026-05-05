@@ -12,7 +12,7 @@ export default async function Home() {
   const { data: popularSources } = await supabase
     .from('movies')
     .select('*')
-    .order('clicks', { ascending: false })
+    .order('clicks', { ascending: false, nullsFirst: false })
     .limit(10);
 
   // 2. Fetch Latest Movies

@@ -47,25 +47,26 @@
     flex: none;
     border-radius: 24px;
   }
-  
+
   .navGroup {
     display: flex;
     overflow-x: auto;
     padding: 10px;
     gap: 10px;
   }
-  
+
   .navItem {
     flex: 0 0 auto;
     margin-bottom: 0;
     padding: 10px 15px;
   }
-  
+
   .navDesc {
     display: none;
   }
-  
-  .sidebarHeader, .sidebarFooter {
+
+  .sidebarHeader,
+  .sidebarFooter {
     display: none;
   }
 }
@@ -107,9 +108,20 @@
 }
 
 @keyframes statusPulse {
-  0% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.8); }
-  100% { opacity: 1; transform: scale(1); }
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .navGroup {
@@ -298,8 +310,13 @@
 }
 
 @keyframes shimmerAnim {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .cardHeaderWithAction .cardTitle {
@@ -335,7 +352,7 @@
   .formGrid {
     grid-template-columns: 1fr;
   }
-  
+
   .submitBtn {
     grid-column: span 1;
   }
@@ -377,7 +394,8 @@
   color: var(--primary);
 }
 
-.input, .select {
+.input,
+.select {
   width: 100%;
   padding: 14px 18px;
   background: rgba(0, 0, 0, 0.3);
@@ -388,7 +406,8 @@
   transition: all 0.3s ease;
 }
 
-.input:focus, .select:focus {
+.input:focus,
+.select:focus {
   outline: none;
   border-color: var(--primary);
   background: rgba(0, 0, 0, 0.5);
@@ -409,7 +428,7 @@
   border-radius: 12px;
   z-index: 100;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 .searchResultItem {
@@ -547,8 +566,15 @@
   text-transform: uppercase;
 }
 
-.badgeMovie { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-.badgeTv { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+.badgeMovie {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+
+.badgeTv {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+}
 
 .linkCell {
   max-width: 200px;
@@ -582,8 +608,17 @@
   font-weight: 600;
 }
 
-.success { background: rgba(34, 197, 94, 0.1); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.2); }
-.error { background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
+.success {
+  background: rgba(34, 197, 94, 0.1);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
 
 /* Auto-Complete Preview */
 .previewContainer {
@@ -649,9 +684,23 @@
   background: rgba(59, 130, 246, 0.3);
 }
 
-.statusChecking { color: #facc15; font-weight: 600; font-size: 0.9rem; }
-.statusActive { color: #4ade80; font-weight: 600; font-size: 0.9rem; }
-.statusBroken { color: #f87171; font-weight: 600; font-size: 0.9rem; }
+.statusChecking {
+  color: #facc15;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.statusActive {
+  color: #4ade80;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.statusBroken {
+  color: #f87171;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
 
 /* Analytics Tab */
 .analyticsDesc {
@@ -883,7 +932,8 @@
   padding: 10px 15px;
 }
 
-.editInput, .editSelect {
+.editInput,
+.editSelect {
   width: 100%;
   padding: 8px 12px;
   background: rgba(0, 0, 0, 0.4);
@@ -894,13 +944,17 @@
   transition: all 0.2s ease;
 }
 
-.editInput:focus, .editSelect:focus {
+.editInput:focus,
+.editSelect:focus {
   outline: none;
   border-color: var(--primary);
   background: rgba(0, 0, 0, 0.6);
 }
 
-.editModeBtn, .saveBtn, .cancelBtn, .deleteBtn {
+.editModeBtn,
+.saveBtn,
+.cancelBtn,
+.deleteBtn {
   padding: 8px 16px;
   border-radius: 10px;
   font-weight: 700;
@@ -1041,7 +1095,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: 
+  background:
     radial-gradient(circle at center, rgba(225, 29, 72, 0.1) 0%, transparent 70%),
     #050508;
   padding: 20px;
@@ -1058,13 +1112,22 @@
   width: 100%;
   max-width: 500px;
   text-align: center;
-  box-shadow: 0 40px 100px rgba(0,0,0,0.8);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
   animation: loginFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes loginFadeIn {
-  from { opacity: 0; transform: translateY(20px); scale: 0.95; }
-  to { opacity: 1; transform: translateY(0); scale: 1; }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+    scale: 0.95;
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    scale: 1;
+  }
 }
 
 .loginHeader {
@@ -1125,9 +1188,19 @@
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-5px);
+  }
+
+  75% {
+    transform: translateX(5px);
+  }
 }
 
 .loginBtn {
@@ -1238,16 +1311,34 @@
 }
 
 @media (max-width: 1024px) {
-  .adminLayout { flex-direction: column; padding: 20px 15px; }
-  .sidebar { flex: none; width: 100%; height: auto; position: static; }
-  .formGrid { grid-template-columns: 1fr; gap: 15px; }
-  .submitBtn, .previewContainer { 
-    grid-column: span 1 !important; 
-    width: 100%; 
-    max-width: none; 
-    justify-self: stretch; 
+  .adminLayout {
+    flex-direction: column;
+    padding: 20px 15px;
   }
-  .card { padding: 25px 20px; }
+
+  .sidebar {
+    flex: none;
+    width: 100%;
+    height: auto;
+    position: static;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .submitBtn,
+  .previewContainer {
+    grid-column: span 1 !important;
+    width: 100%;
+    max-width: none;
+    justify-self: stretch;
+  }
+
+  .card {
+    padding: 25px 20px;
+  }
 }
 
 /* Settings Tab Styles */
@@ -1264,7 +1355,7 @@
   align-items: center;
 }
 
-.maintenanceGrid > button {
+.maintenanceGrid>button {
   flex: 1;
   min-width: 250px;
   margin-top: 0;
@@ -1375,8 +1466,15 @@
 }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateX(-10px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* Mobile Specific for Episode Manager */
@@ -1388,13 +1486,13 @@
     border-radius: 15px;
     border: 1px solid rgba(255, 255, 255, 0.05);
   }
-  
+
   .epLinkInput {
     width: 100%;
     order: 3;
     flex: none;
   }
-  
+
   .epInputGroup {
     flex: 1;
   }
@@ -1591,7 +1689,7 @@
 .setupPoster {
   width: 100%;
   border-radius: 24px;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -1638,7 +1736,8 @@
   box-shadow: 0 10px 20px rgba(225, 29, 72, 0.3);
 }
 
-.nextBtn, .finalizeBtn {
+.nextBtn,
+.finalizeBtn {
   background: var(--primary);
   color: white;
   padding: 18px;
@@ -1653,7 +1752,8 @@
   margin-top: 20px;
 }
 
-.nextBtn:hover, .finalizeBtn:hover {
+.nextBtn:hover,
+.finalizeBtn:hover {
   transform: translateY(-5px);
   box-shadow: 0 15px 40px rgba(225, 29, 72, 0.4);
 }
@@ -1829,7 +1929,7 @@
     grid-template-columns: 1fr;
     gap: 30px;
   }
-  
+
   .setupPosterArea {
     max-width: 250px;
     margin: 0 auto;
@@ -1858,7 +1958,7 @@
   .settingsGrid {
     grid-template-columns: 1fr;
   }
-  
+
   .maintenanceGrid {
     grid-template-columns: 1fr;
   }
@@ -1895,8 +1995,15 @@
 }
 
 @keyframes slideInAction {
-  from { opacity: 0; transform: translateX(10px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .confirmText {
