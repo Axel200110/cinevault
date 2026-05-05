@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import styles from './admin.module.css';
 import ProductionWizard from './ProductionWizard';
 import AnalyticsChart from './AnalyticsChart';
-import { fetchTmdbPreview, checkLinkStatus, searchTmdb, fetchTitlesForAnalytics, resolveReport, deleteComment, createNotification, addMovieToVault, updateMovieAction } from '@/app/actions';
+import { fetchTmdbPreview, checkLinkStatus, searchTmdb, fetchTitlesForAnalytics, resolveReport, deleteComment, createNotification, addMovieToVault, updateMovieAction, cleanupBrokenLinkReports, cleanupUserRequests } from '@/app/actions';
 
 interface MovieRow {
   id: string;
@@ -15,6 +15,10 @@ interface MovieRow {
   type: string;
   clicks?: number;
   linkStatus?: 'checking' | 'active' | 'broken';
+  title?: string;
+  posterUrl?: string;
+  rating?: number;
+  year?: number;
 }
 
 export default function AdminPage() {
@@ -27,6 +31,19 @@ export default function AdminPage() {
   const [allComments, setAllComments] = useState<any[]>([]);
   const [toast, setToast] = useState<{ title: string; msg: string; type: 'success' | 'error' | 'info' } | null>(null);
 
+  // Pagination State
+  const [moviesLimit, setMoviesLimit] = useState(20);
+  const [reportsLimit, setReportsLimit] = useState(20);
+  const [requestsLimit, setRequestsLimit] = useState(20);
+  const [reviewsLimit, setReviewsLimit] = useState(20);
+
+  const [totalMoviesCount, setTotalMoviesCount] = useState(0);
+  const [totalMoviesStat, setTotalMoviesStat] = useState(0);
+  const [totalTvStat, setTotalTvStat] = useState(0);
+  const [totalReportsCount, setTotalReportsCount] = useState(0);
+  const [totalRequestsCount, setTotalRequestsCount] = useState(0);
+  const [totalReviewsCount, setTotalReviewsCount] = useState(0);
+
   const showToast = (title: string, msg: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ title, msg, type });
     setTimeout(() => setToast(null), 4000);
@@ -36,6 +53,11 @@ export default function AdminPage() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
   const [authError, setAuthError] = useState('');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -50,15 +72,15 @@ export default function AdminPage() {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [announcementText, setAnnouncementText] = useState('');
   const [announcementEnabled, setAnnouncementEnabled] = useState(false);
-  
+
   useEffect(() => {
     // Check local storage for existing session
     const authSession = localStorage.getItem('admin_session');
-    
+
     if (authSession === 'true') {
       setIsAuthorized(true);
     }
-    
+
     // Fetch settings
     const fetchSettings = async () => {
       const { data: mData } = await supabase.from('site_settings').select('value').eq('key', 'maintenance_mode').single();
@@ -70,18 +92,18 @@ export default function AdminPage() {
         setAnnouncementText(aData.value.text || '');
       }
     };
-    
+
     const fetchUserRequests = async () => {
       const { data } = await supabase.from('user_requests').select('*').order('created_at', { ascending: false });
       if (data) setUserRequests(data);
     };
-    
+
     fetchMovies();
     fetchReports();
     fetchSettings();
     fetchUserRequests();
     fetchComments();
-  }, []);
+  }, [moviesLimit, reportsLimit, requestsLimit, reviewsLimit]);
 
   const toggleMaintenance = async (enabled: boolean) => {
     const { error } = await supabase.from('site_settings').upsert({ key: 'maintenance_mode', value: enabled });
@@ -96,9 +118,9 @@ export default function AdminPage() {
   };
 
   const handleSaveAnnouncement = async () => {
-    const { error } = await supabase.from('site_settings').upsert({ 
-      key: 'global_announcement', 
-      value: { enabled: announcementEnabled, text: announcementText } 
+    const { error } = await supabase.from('site_settings').upsert({
+      key: 'global_announcement',
+      value: { enabled: announcementEnabled, text: announcementText }
     });
     if (!error) {
       showToast('Announcement Saved', 'Global banner has been updated.', 'success');
@@ -128,14 +150,23 @@ export default function AdminPage() {
     showToast('Session Ended', 'You have been logged out successfully.', 'info');
   };
 
-  // Enrich analytics with titles when tab changes
   const [analyticsData, setAnalyticsData] = useState<any[]>([]);
   useEffect(() => {
-    if (activeTab === 'analytics' && movies.length > 0) {
-      const topRaw = [...movies].sort((a, b) => (b.clicks || 0) - (a.clicks || 0)).slice(0, 10);
-      fetchTitlesForAnalytics(topRaw).then(setAnalyticsData);
+    if (activeTab === 'analytics') {
+      const fetchAnalytics = async () => {
+        const { data } = await supabase
+          .from('movies')
+          .select('*')
+          .order('clicks', { ascending: false, nullsFirst: false })
+          .limit(10);
+        if (data) {
+          const enriched = await fetchTitlesForAnalytics(data);
+          setAnalyticsData(enriched);
+        }
+      };
+      fetchAnalytics();
     }
-  }, [activeTab, movies]);
+  }, [activeTab]);
 
   const startEdit = (movie: MovieRow) => {
     setEditingId(movie.id);
@@ -150,9 +181,9 @@ export default function AdminPage() {
 
   const handleSaveEdit = async (id: string) => {
     if (!window.confirm('Are you sure you want to save these changes?')) return;
-    
+
     const result = await updateMovieAction(id, editTmdbId, editLink, editType as 'movie' | 'tv');
-      
+
     if (result.success) {
       setEditingId(null);
       fetchMovies();
@@ -168,30 +199,80 @@ export default function AdminPage() {
 
 
   const fetchMovies = async () => {
-    const { data, error } = await supabase
+    const { data, count, error } = await supabase
       .from('movies')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (data) setMovies(data);
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .limit(moviesLimit);
+
+    if (data) {
+      const enriched = await fetchTitlesForAnalytics(data);
+      setMovies(enriched);
+      if (count !== null) setTotalMoviesCount(count);
+
+      // Fetch movie/tv stats separately for accuracy
+      const { count: mCount } = await supabase.from('movies').select('*', { count: 'exact', head: true }).eq('type', 'movie');
+      const { count: tCount } = await supabase.from('movies').select('*', { count: 'exact', head: true }).eq('type', 'tv');
+      if (mCount !== null) setTotalMoviesStat(mCount);
+      if (tCount !== null) setTotalTvStat(tCount);
+    }
   };
 
   const fetchReports = async () => {
-    const { data } = await supabase
+    const { data, count } = await supabase
       .from('reports')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (data) setReports(data);
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .limit(reportsLimit);
+
+    if (data) {
+      if (count !== null) setTotalReportsCount(count);
+      const movieIds = [...new Set(data.map(r => r.movie_id))];
+      const { data: movieTypes } = await supabase.from('movies').select('tmdb_id, type').in('tmdb_id', movieIds);
+
+      const reportsWithMeta = data.map(r => {
+        const m = movieTypes?.find(mt => mt.tmdb_id === r.movie_id);
+        return { ...r, tmdb_id: r.movie_id, type: m?.type || 'movie' };
+      });
+
+      const enriched = await fetchTitlesForAnalytics(reportsWithMeta);
+      setReports(enriched);
+    }
   };
 
   const fetchComments = async () => {
-    const { data } = await supabase
+    const { data, count } = await supabase
       .from('comments')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (data) setAllComments(data);
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .limit(reviewsLimit);
+
+    if (data) {
+      if (count !== null) setTotalReviewsCount(count);
+      const movieIds = [...new Set(data.map(c => c.movie_id))];
+      const { data: movieTypes } = await supabase.from('movies').select('tmdb_id, type').in('tmdb_id', movieIds);
+
+      const commentsWithMeta = data.map(c => {
+        const m = movieTypes?.find(mt => mt.tmdb_id === c.movie_id);
+        return { ...c, tmdb_id: c.movie_id, type: m?.type || 'movie' };
+      });
+
+      const enriched = await fetchTitlesForAnalytics(commentsWithMeta);
+      setAllComments(enriched);
+    }
+  };
+
+  const fetchUserRequests = async () => {
+    const { data, count } = await supabase
+      .from('user_requests')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .limit(requestsLimit);
+
+    if (data) {
+      setUserRequests(data);
+      if (count !== null) setTotalRequestsCount(count);
+    }
   };
 
   const handleDeleteComment = async (id: string) => {
@@ -222,12 +303,32 @@ export default function AdminPage() {
 
     if (result.success) {
       showToast('Request Fulfilled', 'The movie has been added and users notified.', 'success');
-      // Refresh local state
-      const { data } = await supabase.from('user_requests').select('*').order('created_at', { ascending: false });
-      if (data) setUserRequests(data);
+      fetchUserRequests();
       fetchMovies();
     } else {
       showToast('Fulfill Failed', result.error || 'Could not add to library.', 'error');
+    }
+  };
+
+  const handleCleanupReports = async () => {
+    if (!window.confirm('Delete all resolved reports permanently from the archive?')) return;
+    const result = await cleanupBrokenLinkReports();
+    if (result.success) {
+      fetchReports();
+      showToast('Archive Cleared', 'All resolved reports have been removed.', 'success');
+    } else {
+      showToast('Cleanup Failed', 'Could not clear the archive.', 'error');
+    }
+  };
+
+  const handleCleanupRequests = async () => {
+    if (!window.confirm('Delete all fulfilled requests permanently from the archive?')) return;
+    const result = await cleanupUserRequests();
+    if (result.success) {
+      fetchUserRequests();
+      showToast('Archive Cleared', 'All fulfilled requests have been removed.', 'success');
+    } else {
+      showToast('Cleanup Failed', 'Could not clear the archive.', 'error');
     }
   };
 
@@ -245,7 +346,7 @@ export default function AdminPage() {
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('WARNING: Are you sure you want to permanently remove this content? This action cannot be undone.')) return;
-    
+
     const { error } = await supabase.from('movies').delete().eq('id', id);
     if (!error) {
       fetchMovies();
@@ -257,9 +358,9 @@ export default function AdminPage() {
 
   const handleCheckLink = async (id: string, url: string) => {
     setMovies(prev => prev.map(m => m.id === id ? { ...m, linkStatus: 'checking' } : m));
-    
+
     let urlToCheck = url;
-    
+
     // If it's a TV series, the link is a JSON string of episodes
     if (url.trim().startsWith('[') || url.includes('"link":')) {
       try {
@@ -271,12 +372,12 @@ export default function AdminPage() {
         console.error("Link check: Failed to parse episode JSON", e);
       }
     }
-    
+
     const isWorking = await checkLinkStatus(urlToCheck);
-    
-    setMovies(prev => prev.map(m => m.id === id ? { 
-      ...m, 
-      linkStatus: isWorking ? 'active' : 'broken' 
+
+    setMovies(prev => prev.map(m => m.id === id ? {
+      ...m,
+      linkStatus: isWorking ? 'active' : 'broken'
     } : m));
 
     if (isWorking) {
@@ -286,12 +387,11 @@ export default function AdminPage() {
     }
   };
 
-  // Quick Stats
-  const totalMovies = movies.filter(m => m.type === 'movie').length;
-  const totalTv = movies.filter(m => m.type === 'tv').length;
-  
-  // Analytics sorting
-  const topMovies = [...movies].sort((a, b) => (b.clicks || 0) - (a.clicks || 0)).slice(0, 10);
+
+
+  if (!mounted) {
+    return null;
+  }
 
   if (!isAuthorized) {
     return (
@@ -302,16 +402,17 @@ export default function AdminPage() {
             <h1>Admin Access</h1>
             <p>Please enter your administrator password to manage CineVault.</p>
           </div>
-          
+
           <form onSubmit={handleLogin} className={styles.loginForm}>
-            <div className={styles.inputGroup}>
-              <input 
-                type="password" 
+            <div className={styles.inputGroup} suppressHydrationWarning>
+              <input
+                type="password"
                 className={styles.loginInput}
                 placeholder="Enter Administrator Password"
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
                 autoFocus
+                suppressHydrationWarning
               />
               {authError && <p className={styles.authError}>{authError}</p>}
             </div>
@@ -319,7 +420,7 @@ export default function AdminPage() {
               Unlock Dashboard
             </button>
           </form>
-          
+
           <div className={styles.loginFooter}>
             <p>Authorized personnel only. Sessions are tracked.</p>
             <a href="/" className={styles.backHome}>← Back to Home</a>
@@ -332,7 +433,7 @@ export default function AdminPage() {
   return (
     <main className={styles.adminMain}>
       <Navbar />
-      
+
       <div className={styles.adminLayout}>
         {/* Sidebar */}
         <aside className={styles.sidebar}>
@@ -347,7 +448,7 @@ export default function AdminPage() {
           </div>
 
           <div className={styles.navGroup}>
-            <div 
+            <div
               className={`${styles.navItem} ${activeTab === 'add' ? styles.navActive : ''}`}
               onClick={() => setActiveTab('add')}
             >
@@ -358,7 +459,7 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div 
+            <div
               className={`${styles.navItem} ${activeTab === 'manage' ? styles.navActive : ''}`}
               onClick={() => setActiveTab('manage')}
             >
@@ -369,7 +470,7 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div 
+            <div
               className={`${styles.navItem} ${activeTab === 'analytics' ? styles.navActive : ''}`}
               onClick={() => setActiveTab('analytics')}
             >
@@ -380,7 +481,7 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div 
+            <div
               className={`${styles.navItem} ${activeTab === 'reports' ? styles.navActive : ''}`}
               onClick={() => setActiveTab('reports')}
             >
@@ -394,7 +495,7 @@ export default function AdminPage() {
               )}
             </div>
 
-            <div 
+            <div
               className={`${styles.navItem} ${activeTab === 'userRequests' ? styles.navActive : ''}`}
               onClick={() => setActiveTab('userRequests')}
             >
@@ -408,7 +509,7 @@ export default function AdminPage() {
               )}
             </div>
 
-            <div 
+            <div
               className={`${styles.navItem} ${activeTab === 'reviews' ? styles.navActive : ''}`}
               onClick={() => setActiveTab('reviews')}
             >
@@ -419,7 +520,7 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div 
+            <div
               className={`${styles.navItem} ${activeTab === 'settings' ? styles.navActive : ''}`}
               onClick={() => setActiveTab('settings')}
             >
@@ -466,22 +567,22 @@ export default function AdminPage() {
           <div className={styles.statsGrid}>
             <div className={styles.statCard}>
               <div className={styles.statLabel}>Total Assets</div>
-              <div className={styles.statValue}>{movies.length}</div>
+              <div className={styles.statValue}>{totalMoviesCount}</div>
             </div>
             <div className={styles.statCard}>
               <div className={styles.statLabel}>Movies</div>
-              <div className={styles.statValue}>{totalMovies}</div>
+              <div className={styles.statValue}>{totalMoviesStat}</div>
             </div>
             <div className={styles.statCard}>
               <div className={styles.statLabel}>TV Series</div>
-              <div className={styles.statValue}>{totalTv}</div>
+              <div className={styles.statValue}>{totalTvStat}</div>
             </div>
           </div>
 
           {activeTab === 'add' && (
-            <ProductionWizard 
-              onSuccess={fetchMovies} 
-              showToast={showToast} 
+            <ProductionWizard
+              onSuccess={fetchMovies}
+              showToast={showToast}
             />
           )}
 
@@ -492,6 +593,7 @@ export default function AdminPage() {
                 <table className={styles.table}>
                   <thead>
                     <tr>
+                      <th>Content</th>
                       <th>TMDb ID</th>
                       <th>Type</th>
                       <th>Source Link</th>
@@ -505,16 +607,22 @@ export default function AdminPage() {
                         {editingId === movie.id ? (
                           <tr className={styles.editingRow}>
                             <td>
-                              <input 
-                                className={styles.editInput} 
-                                value={editTmdbId} 
-                                onChange={(e) => setEditTmdbId(e.target.value)} 
+                              <div className={styles.adminTableContent}>
+                                <img src={movie.posterUrl || 'https://via.placeholder.com/40x60'} alt="" className={styles.adminTablePoster} />
+                                <span className={styles.adminTableTitle}>{movie.title || 'Loading...'}</span>
+                              </div>
+                            </td>
+                            <td>
+                              <input
+                                className={styles.editInput}
+                                value={editTmdbId}
+                                onChange={(e) => setEditTmdbId(e.target.value)}
                               />
                             </td>
                             <td>
-                              <select 
-                                className={styles.editSelect} 
-                                value={editType} 
+                              <select
+                                className={styles.editSelect}
+                                value={editType}
                                 onChange={(e) => setEditType(e.target.value)}
                               >
                                 <option value="movie">movie</option>
@@ -522,10 +630,10 @@ export default function AdminPage() {
                               </select>
                             </td>
                             <td>
-                              <input 
-                                className={styles.editInput} 
-                                value={editLink} 
-                                onChange={(e) => setEditLink(e.target.value)} 
+                              <input
+                                className={styles.editInput}
+                                value={editLink}
+                                onChange={(e) => setEditLink(e.target.value)}
                               />
                             </td>
                             <td>
@@ -542,6 +650,12 @@ export default function AdminPage() {
                           </tr>
                         ) : (
                           <tr>
+                            <td>
+                              <div className={styles.adminTableContent}>
+                                <img src={movie.posterUrl || 'https://via.placeholder.com/40x60'} alt="" className={styles.adminTablePoster} />
+                                <span className={styles.adminTableTitle}>{movie.title || 'Unknown Title'}</span>
+                              </div>
+                            </td>
                             <td>{movie.tmdb_id}</td>
                             <td>
                               <span className={`${styles.badge} ${movie.type === 'movie' ? styles.badgeMovie : styles.badgeTv}`}>
@@ -553,42 +667,63 @@ export default function AdminPage() {
                                 {movie.terabox_link}
                               </a>
                             </td>
-                          <td>
-                            {movie.linkStatus === 'checking' && <span className={styles.statusChecking}>Checking...</span>}
-                            {movie.linkStatus === 'active' && <span className={styles.statusActive}>✅ Active</span>}
-                            {movie.linkStatus === 'broken' && <span className={styles.statusBroken}>❌ Broken</span>}
-                            {!movie.linkStatus && (
-                              <button 
-                                className={styles.checkBtn}
-                                onClick={() => handleCheckLink(movie.id, movie.terabox_link)}
-                              >
-                                Check Link
-                              </button>
-                            )}
-                          </td>
-                          <td className={styles.actionCell}>
-                            <div className={styles.actionGroup}>
-                              <button 
-                                className={styles.editModeBtn}
-                                onClick={() => startEdit(movie)}
-                              >
-                                Edit
-                              </button>
-                              <button 
-                                className={styles.deleteBtn}
-                                onClick={() => handleDelete(movie.id)}
-                              >
-                                Remove
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
+                            <td>
+                              {movie.linkStatus === 'checking' && <span className={styles.statusChecking}>Checking...</span>}
+                              {movie.linkStatus === 'active' && <span className={styles.statusActive}>✅ Active</span>}
+                              {movie.linkStatus === 'broken' && <span className={styles.statusBroken}>❌ Broken</span>}
+                              {!movie.linkStatus && (
+                                <button
+                                  className={styles.checkBtn}
+                                  onClick={() => handleCheckLink(movie.id, movie.terabox_link)}
+                                >
+                                  Check Link
+                                </button>
+                              )}
+                            </td>
+                            <td className={styles.actionCell}>
+                              <div className={styles.actionGroup}>
+                                <button
+                                  className={styles.editModeBtn}
+                                  onClick={() => startEdit(movie)}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  className={styles.deleteBtn}
+                                  onClick={() => handleDelete(movie.id)}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
                         )}
                       </React.Fragment>
                     ))}
                   </tbody>
                 </table>
               </div>
+
+              {totalMoviesCount > 20 && (
+                <div className={styles.loadMoreContainer}>
+                  {moviesLimit < totalMoviesCount && (
+                    <button
+                      className={styles.loadMoreBtn}
+                      onClick={() => setMoviesLimit(prev => prev + 20)}
+                    >
+                      Load More Titles ({totalMoviesCount - moviesLimit} remaining)
+                    </button>
+                  )}
+                  {moviesLimit > 20 && (
+                    <button
+                      className={styles.collapseBtn}
+                      onClick={() => setMoviesLimit(20)}
+                    >
+                      Collapse to 20
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -596,7 +731,7 @@ export default function AdminPage() {
             <div className={styles.card}>
               <h2 className={styles.cardTitle}>📊 Operational Intelligence</h2>
               <p className={styles.analyticsDesc}>Real-time monitoring of platform traffic and asset engagement.</p>
-              
+
               <div className={styles.chartSection}>
                 <h3 className={styles.subTitle}>Daily Platform Traffic</h3>
                 <AnalyticsChart />
@@ -611,8 +746,8 @@ export default function AdminPage() {
                       <span className={styles.analyticsTitle}>{movie.title}</span>
                       <span className={styles.analyticsId}>TMDb ID: {movie.tmdb_id} ({movie.type})</span>
                       <div className={styles.analyticsBarContainer}>
-                        <div 
-                          className={styles.analyticsBar} 
+                        <div
+                          className={styles.analyticsBar}
                           style={{ width: `${Math.max(5, ((movie.clicks || 0) / Math.max(1, analyticsData[0]?.clicks || 1)) * 100)}%` }}
                         ></div>
                       </div>
@@ -634,14 +769,22 @@ export default function AdminPage() {
 
           {activeTab === 'reports' && (
             <div className={styles.card}>
-              <h2 className={styles.cardTitle}>🚩 Broken Link Reports</h2>
+              <div className={styles.cardHeaderWithAction}>
+                <h2 className={styles.cardTitle}>🚩 Broken Link Reports</h2>
+                {reports.some(r => r.status === 'resolved') && (
+                  <button className={styles.cleanupBtn} onClick={handleCleanupReports}>
+                    Clear Resolved
+                  </button>
+                )}
+              </div>
               <p className={styles.analyticsDesc}>Users have reported the following items. Please update their Terabox links.</p>
-              
+
               <div className={styles.tableWrapper}>
                 <table className={styles.table}>
                   <thead>
                     <tr>
                       <th>Date</th>
+                      <th>Content</th>
                       <th>TMDb ID</th>
                       <th>Status</th>
                       <th className={styles.textRight}>Action</th>
@@ -651,6 +794,12 @@ export default function AdminPage() {
                     {reports.map((report) => (
                       <tr key={report.id}>
                         <td>{new Date(report.created_at).toLocaleDateString()}</td>
+                        <td>
+                          <div className={styles.adminTableContent}>
+                            <img src={report.posterUrl || 'https://via.placeholder.com/40x60'} alt="" className={styles.adminTablePoster} />
+                            <span className={styles.adminTableTitle}>{report.title || 'Unknown'}</span>
+                          </div>
+                        </td>
                         <td>{report.movie_id}</td>
                         <td>
                           {report.status === 'pending' ? (
@@ -662,7 +811,7 @@ export default function AdminPage() {
                         <td className={styles.actionCell}>
                           <div className={styles.actionGroup}>
                             {report.status === 'pending' && (
-                              <button 
+                              <button
                                 className={styles.saveBtn}
                                 onClick={() => handleResolveReport(report.id, report.user_id, report.movie_id)}
                               >
@@ -675,20 +824,48 @@ export default function AdminPage() {
                     ))}
                     {reports.length === 0 && (
                       <tr>
-                        <td colSpan={4} style={{ textAlign: 'center', padding: '20px' }}>No reports found.</td>
+                        <td colSpan={5} style={{ textAlign: 'center', padding: '20px' }}>No reports found.</td>
                       </tr>
                     )}
                   </tbody>
                 </table>
               </div>
+
+              {totalReportsCount > 20 && (
+                <div className={styles.loadMoreContainer}>
+                  {reportsLimit < totalReportsCount && (
+                    <button
+                      className={styles.loadMoreBtn}
+                      onClick={() => setReportsLimit(prev => prev + 20)}
+                    >
+                      Load More Reports ({totalReportsCount - reportsLimit} remaining)
+                    </button>
+                  )}
+                  {reportsLimit > 20 && (
+                    <button
+                      className={styles.collapseBtn}
+                      onClick={() => setReportsLimit(20)}
+                    >
+                      Collapse to 20
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
           {activeTab === 'userRequests' && (
             <div className={styles.card}>
-              <h2 className={styles.cardTitle}>📬 User Content Requests</h2>
+              <div className={styles.cardHeaderWithAction}>
+                <h2 className={styles.cardTitle}>📬 User Content Requests</h2>
+                {userRequests.some(r => r.status === 'fulfilled') && (
+                  <button className={styles.cleanupBtn} onClick={handleCleanupRequests}>
+                    Clear Fulfilled
+                  </button>
+                )}
+              </div>
               <p className={styles.analyticsDesc}>These titles were requested by your users. Fulfill them by adding a link.</p>
-              
+
               <div className={styles.tableWrapper}>
                 <table className={styles.table}>
                   <thead>
@@ -719,7 +896,7 @@ export default function AdminPage() {
                         <td className={styles.actionCell}>
                           <div className={styles.actionGroup}>
                             {req.status === 'pending' && (
-                              <button 
+                              <button
                                 className={styles.saveBtn}
                                 onClick={() => handleFulfillRequest(req.id, req.tmdb_id, req.type)}
                               >
@@ -738,6 +915,27 @@ export default function AdminPage() {
                   </tbody>
                 </table>
               </div>
+
+              {totalRequestsCount > 20 && (
+                <div className={styles.loadMoreContainer}>
+                  {requestsLimit < totalRequestsCount && (
+                    <button
+                      className={styles.loadMoreBtn}
+                      onClick={() => setRequestsLimit(prev => prev + 20)}
+                    >
+                      Load More Requests ({totalRequestsCount - requestsLimit} remaining)
+                    </button>
+                  )}
+                  {requestsLimit > 20 && (
+                    <button
+                      className={styles.collapseBtn}
+                      onClick={() => setRequestsLimit(20)}
+                    >
+                      Collapse to 20
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -745,15 +943,15 @@ export default function AdminPage() {
             <div className={styles.card}>
               <h2 className={styles.cardTitle}>💬 Community Reviews</h2>
               <p className={styles.analyticsDesc}>Monitor and manage reviews posted by users across the platform.</p>
-              
+
               <div className={styles.tableWrapper}>
                 <table className={styles.table}>
                   <thead>
                     <tr>
                       <th>Date</th>
                       <th>Content</th>
+                      <th>Review</th>
                       <th>Rating</th>
-                      <th>TMDb ID</th>
                       <th className={styles.textRight}>Action</th>
                     </tr>
                   </thead>
@@ -761,6 +959,12 @@ export default function AdminPage() {
                     {allComments.map((comment) => (
                       <tr key={comment.id}>
                         <td>{new Date(comment.created_at).toLocaleDateString()}</td>
+                        <td>
+                          <div className={styles.adminTableContent}>
+                            <img src={comment.posterUrl || 'https://via.placeholder.com/40x60'} alt="" className={styles.adminTablePoster} />
+                            <span className={styles.adminTableTitle}>{comment.title || 'Unknown'}</span>
+                          </div>
+                        </td>
                         <td className={styles.commentCell}>
                           <p className={styles.commentPreview}>{comment.content}</p>
                         </td>
@@ -769,10 +973,9 @@ export default function AdminPage() {
                             <span className={styles.ratingBadge}>⭐ {comment.rating}</span>
                           ) : 'N/A'}
                         </td>
-                        <td>{comment.movie_id}</td>
                         <td className={styles.actionCell}>
                           <div className={styles.actionGroup}>
-                            <button 
+                            <button
                               className={styles.deleteBtn}
                               onClick={() => handleDeleteComment(comment.id)}
                             >
@@ -790,6 +993,27 @@ export default function AdminPage() {
                   </tbody>
                 </table>
               </div>
+
+              {totalReviewsCount > 20 && (
+                <div className={styles.loadMoreContainer}>
+                  {reviewsLimit < totalReviewsCount && (
+                    <button
+                      className={styles.loadMoreBtn}
+                      onClick={() => setReviewsLimit(prev => prev + 20)}
+                    >
+                      Load More Reviews ({totalReviewsCount - reviewsLimit} remaining)
+                    </button>
+                  )}
+                  {reviewsLimit > 20 && (
+                    <button
+                      className={styles.collapseBtn}
+                      onClick={() => setReviewsLimit(20)}
+                    >
+                      Collapse to 20
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -799,17 +1023,17 @@ export default function AdminPage() {
                 <h2 className={styles.cardTitle}>⚙️ General Settings</h2>
                 <div className={styles.inputGroup}>
                   <label className={styles.label}>Site Name</label>
-                  <input 
-                    type="text" 
-                    className={styles.input} 
+                  <input
+                    type="text"
+                    className={styles.input}
                     value={siteName}
                     onChange={(e) => setSiteName(e.target.value)}
                   />
                 </div>
                 <div className={styles.inputGroup}>
                   <label className={styles.label}>
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={showPreviews}
                       onChange={(e) => setShowPreviews(e.target.checked)}
                       style={{ marginRight: '10px' }}
@@ -819,8 +1043,8 @@ export default function AdminPage() {
                 </div>
                 <div className={styles.inputGroup}>
                   <label className={styles.label}>
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={maintenanceMode}
                       onChange={(e) => toggleMaintenance(e.target.checked)}
                       style={{ marginRight: '10px' }}
@@ -832,13 +1056,13 @@ export default function AdminPage() {
                   </p>
                 </div>
                 <div className={styles.maintenanceGrid}>
-                  <button 
+                  <button
                     className={styles.editModeBtn}
                     onClick={() => window.open('/?preview_maintenance=true', '_blank')}
                   >
                     Preview Maintenance Screen
                   </button>
-                  <button 
+                  <button
                     className={styles.submitBtn}
                     onClick={() => showToast('Settings Saved', 'Global preferences have been updated.', 'success')}
                   >
@@ -852,8 +1076,8 @@ export default function AdminPage() {
                 <p className={styles.analyticsDesc}>Set a site-wide banner message for all users.</p>
                 <div className={styles.inputGroup}>
                   <label className={styles.label}>
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={announcementEnabled}
                       onChange={(e) => setAnnouncementEnabled(e.target.checked)}
                       style={{ marginRight: '10px' }}
@@ -863,15 +1087,15 @@ export default function AdminPage() {
                 </div>
                 <div className={styles.inputGroup}>
                   <label className={styles.label}>Announcement Message</label>
-                  <textarea 
-                    className={styles.input} 
+                  <textarea
+                    className={styles.input}
                     style={{ minHeight: '80px', resize: 'vertical' }}
                     placeholder="E.g., Added 10 new Marvel movies in 4K!"
                     value={announcementText}
                     onChange={(e) => setAnnouncementText(e.target.value)}
                   />
                 </div>
-                <button 
+                <button
                   className={styles.submitBtn}
                   onClick={handleSaveAnnouncement}
                 >
@@ -885,9 +1109,9 @@ export default function AdminPage() {
                 <form onSubmit={handleUpdatePassword}>
                   <div className={styles.inputGroup}>
                     <label className={styles.label}>New Admin Password</label>
-                    <input 
-                      type="password" 
-                      className={styles.input} 
+                    <input
+                      type="password"
+                      className={styles.input}
                       placeholder="Enter new secure password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
@@ -904,17 +1128,17 @@ export default function AdminPage() {
                 <h2 className={styles.cardTitle}>🧹 Maintenance</h2>
                 <p className={styles.analyticsDesc}>Perform database optimization and cache clearing.</p>
                 <div className={styles.maintenanceGrid}>
-                  <button 
+                  <button
                     className={styles.editModeBtn}
                     onClick={() => {
-                      if(window.confirm('Clear all click analytics?')) {
+                      if (window.confirm('Clear all click analytics?')) {
                         showToast('Analytics Reset', 'All click data has been cleared.', 'info');
                       }
                     }}
                   >
                     Clear Click Analytics
                   </button>
-                  <button 
+                  <button
                     className={styles.editModeBtn}
                     onClick={() => showToast('Cache Purged', 'Global CDN cache has been invalidated.', 'success')}
                   >

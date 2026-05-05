@@ -289,6 +289,19 @@ export async function markNotificationAsRead(notifId: string) {
   }
 }
 
+export async function clearReadNotifications(userId: string) {
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('user_id', userId)
+      .eq('is_read', true);
+    return { success: !error };
+  } catch (error) {
+    return { success: false };
+  }
+}
+
 // 12. Add Movie to Vault Action
 export async function addMovieToVault(tmdbId: string, teraboxLink: string, type: 'movie' | 'tv') {
   try {
@@ -404,5 +417,26 @@ export async function updateMovieAction(id: string, tmdbId: string, teraboxLink:
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
+  }
+}
+
+// 14. Bulk Cleanup Actions (Admin)
+export async function cleanupBrokenLinkReports() {
+  try {
+    const { error } = await supabase.from('reports').delete().eq('status', 'resolved');
+    revalidatePath('/admin');
+    return { success: !error };
+  } catch (error) {
+    return { success: false };
+  }
+}
+
+export async function cleanupUserRequests() {
+  try {
+    const { error } = await supabase.from('user_requests').delete().eq('status', 'fulfilled');
+    revalidatePath('/admin');
+    return { success: !error };
+  } catch (error) {
+    return { success: false };
   }
 }

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styles from './Navbar.module.css';
 import { supabase } from '@/lib/supabase';
-import { fetchNotifications, markNotificationAsRead } from '@/app/actions';
+import { fetchNotifications, markNotificationAsRead, clearReadNotifications } from '@/app/actions';
 import Link from 'next/link';
 
 export default function NotificationBell({ userId }: { userId: string }) {
@@ -12,15 +12,14 @@ export default function NotificationBell({ userId }: { userId: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
 
+  const loadNotifications = async () => {
+    const data = await fetchNotifications(userId);
+    setNotifications(data);
+    setUnreadCount(data.filter((n: any) => !n.is_read).length);
+  };
+
   useEffect(() => {
     if (!userId) return;
-
-    const loadNotifications = async () => {
-      console.log('Fetching notifications for:', userId);
-      const data = await fetchNotifications(userId);
-      setNotifications(data);
-      setUnreadCount(data.filter((n: any) => !n.is_read).length);
-    };
 
     loadNotifications();
 
@@ -58,6 +57,13 @@ export default function NotificationBell({ userId }: { userId: string }) {
     setUnreadCount(prev => Math.max(0, prev - 1));
   };
 
+  const handleClearRead = async () => {
+    const result = await clearReadNotifications(userId);
+    if (result.success) {
+      loadNotifications();
+    }
+  };
+
   return (
     <div className={styles.bellContainer} ref={bellRef}>
       <button className={styles.bellBtn} onClick={() => setIsOpen(!isOpen)} title="Intelligence Reports">
@@ -72,6 +78,9 @@ export default function NotificationBell({ userId }: { userId: string }) {
         <div className={styles.bellDropdown}>
           <div className={styles.bellHeader}>
             <span>Intelligence Briefing</span>
+            {notifications.some(n => n.is_read) && (
+              <button className={styles.clearBtn} onClick={handleClearRead}>Clear Read</button>
+            )}
           </div>
           <div className={styles.bellList}>
             {notifications.length > 0 ? notifications.map((n) => (
