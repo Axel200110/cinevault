@@ -1814,3 +1814,66 @@
     margin: 0 5px;
   }
 }
+
+/* Inline Confirmation Styles */
+.actionGroup {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.inlineConfirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(229, 9, 20, 0.1);
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(229, 9, 20, 0.2);
+  animation: slideInAction 0.2s ease-out;
+}
+
+@keyframes slideInAction {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.confirmText {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #e50914;
+  text-transform: uppercase;
+}
+
+.confirmBtnSmall {
+  background: #e50914;
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.confirmBtnSmall:hover {
+  background: #b91c1c;
+  transform: scale(1.1);
+}
+
+.cancelBtnSmall {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.cancelBtnSmall:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

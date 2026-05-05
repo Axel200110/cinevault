@@ -20,12 +20,16 @@ export default function WatchlistPage() {
     isOpen: boolean;
     title: string;
     message: string;
+    itemTitle?: string;
+    posterUrl?: string;
     type: 'confirm' | 'danger';
     onConfirm: () => void;
   }>({
     isOpen: false,
     title: '',
     message: '',
+    itemTitle: '',
+    posterUrl: '',
     type: 'confirm',
     onConfirm: () => {},
   });
@@ -74,10 +78,13 @@ export default function WatchlistPage() {
 
   const handleRemove = async (movieId: string) => {
     if (!user) return;
+    const movie = movies.find(m => m.id === movieId);
     setModal({
       isOpen: true,
       title: 'Remove from Watchlist',
-      message: 'Are you sure you want to remove this title from your watchlist?',
+      message: 'Are you sure you want to remove this title?',
+      itemTitle: movie?.title,
+      posterUrl: movie?.posterUrl,
       type: 'danger',
       onConfirm: async () => {
         const result = await removeFromWatchlist(user.id, movieId);
@@ -143,6 +150,8 @@ export default function WatchlistPage() {
         isOpen={modal.isOpen}
         title={modal.title}
         message={modal.message}
+        itemTitle={modal.itemTitle}
+        posterUrl={modal.posterUrl}
         type={modal.type}
         onClose={() => setModal(prev => ({ ...prev, isOpen: false }))}
         onConfirm={modal.onConfirm}

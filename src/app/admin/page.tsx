@@ -27,6 +27,10 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [activeTab, setActiveTab] = useState<'add' | 'manage' | 'analytics' | 'reports' | 'settings' | 'userRequests' | 'reviews'>('add');
+  
+  // Inline Action States
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  
   const [reports, setReports] = useState<any[]>([]);
   const [userRequests, setUserRequests] = useState<any[]>([]);
   const [allComments, setAllComments] = useState<any[]>([]);
@@ -80,6 +84,8 @@ export default function AdminPage() {
     isOpen: boolean;
     title: string;
     message: string;
+    itemTitle?: string;
+    posterUrl?: string;
     type: 'info' | 'confirm' | 'prompt' | 'danger';
     onConfirm: (val?: string) => void;
     defaultValue?: string;
@@ -88,6 +94,8 @@ export default function AdminPage() {
     isOpen: false,
     title: '',
     message: '',
+    itemTitle: '',
+    posterUrl: '',
     type: 'info',
     onConfirm: () => {},
   });
@@ -203,23 +211,15 @@ export default function AdminPage() {
   };
 
   const handleSaveEdit = async (id: string) => {
-    setModal({
-      isOpen: true,
-      title: 'Save Changes',
-      message: 'Are you sure you want to save these modifications to the library?',
-      type: 'confirm',
-      onConfirm: async () => {
-        const result = await updateMovieAction(id, editTmdbId, editLink, editType as 'movie' | 'tv');
-        if (result.success) {
-          setEditingId(null);
-          fetchMovies();
-          fetchReports(); 
-          showToast('Library Updated', 'The content details have been modified.', 'success');
-        } else {
-          showToast('Update Failed', result.error || 'Could not update record.', 'error');
-        }
-      }
-    });
+    const result = await updateMovieAction(id, editTmdbId, editLink, editType as 'movie' | 'tv');
+    if (result.success) {
+      setEditingId(null);
+      fetchMovies();
+      fetchReports(); 
+      showToast('Library Updated', 'The content details have been modified.', 'success');
+    } else {
+      showToast('Update Failed', result.error || 'Could not update record.', 'error');
+    }
   };
 
 
@@ -336,10 +336,13 @@ export default function AdminPage() {
 
 
   const handleFulfillRequest = async (requestId: string, tmdbId: string, type: string) => {
+    const request = userRequests.find(r => r.id === requestId);
     setModal({
       isOpen: true,
       title: 'Fulfill Request',
       message: 'Please provide the Terabox link for this content:',
+      itemTitle: request?.title,
+      posterUrl: request?.posterUrl,
       type: 'prompt',
       placeholder: 'https://1024terabox.com/s/...',
       onConfirm: async (fulfillLink) => {
@@ -398,10 +401,13 @@ export default function AdminPage() {
   };
 
   const handleDeleteRequest = async (requestId: string) => {
+    const request = userRequests.find(r => r.id === requestId);
     setModal({
       isOpen: true,
       title: 'Dismiss Request',
       message: 'Are you sure you want to dismiss this user request?',
+      itemTitle: request?.title,
+      posterUrl: request?.posterUrl,
       type: 'danger',
       onConfirm: async () => {
         const result = await deleteUserRequest(requestId);
@@ -428,21 +434,14 @@ export default function AdminPage() {
 
 
   const handleDelete = async (id: string) => {
-    setModal({
-      isOpen: true,
-      title: 'Remove Content',
-      message: 'WARNING: This will permanently delete this title from your library. This action cannot be undone.',
-      type: 'danger',
-      onConfirm: async () => {
-        const { error } = await supabase.from('movies').delete().eq('id', id);
-        if (!error) {
-          fetchMovies();
-          showToast('Content Removed', 'Item deleted from library.', 'info');
-        } else {
-          showToast('Delete Failed', error.message, 'error');
-        }
-      }
-    });
+    const { error } = await supabase.from('movies').delete().eq('id', id);
+    if (!error) {
+      setDeletingId(null);
+      fetchMovies();
+      showToast('Content Removed', 'Item deleted from library.', 'info');
+    } else {
+      showToast('Delete Failed', error.message, 'error');
+    }
   };
 
   const handleCheckLink = async (id: string, url: string) => {
@@ -809,18 +808,38 @@ export default function AdminPage() {
                             </td>
                             <td className={styles.actionCell}>
                               <div className={styles.actionGroup}>
-                                <button
-                                  className={styles.editModeBtn}
-                                  onClick={() => startEdit(movie)}
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  className={styles.deleteBtn}
-                                  onClick={() => handleDelete(movie.id)}
-                                >
-                                  Remove
-                                </button>
+                                {deletingId === movie.id ? (
+                                  <div className={styles.inlineConfirm}>
+                                    <span className={styles.confirmText}>Sure?</span>
+                                    <button
+                                      className={styles.confirmBtnSmall}
+                                      onClick={() => handleDelete(movie.id)}
+                                    >
+                                      YES
+                                    </button>
+                                    <button
+                                      className={styles.cancelBtnSmall}
+                                      onClick={() => setDeletingId(null)}
+                                    >
+                                      NO
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <button
+                                      className={styles.editModeBtn}
+                                      onClick={() => startEdit(movie)}
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      className={styles.deleteBtn}
+                                      onClick={() => setDeletingId(movie.id)}
+                                    >
+                                      Remove
+                                    </button>
+                                  </>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -1306,6 +1325,8 @@ export default function AdminPage() {
         isOpen={modal.isOpen}
         title={modal.title}
         message={modal.message}
+        itemTitle={modal.itemTitle}
+        posterUrl={modal.posterUrl}
         type={modal.type}
         defaultValue={modal.defaultValue}
         placeholder={modal.placeholder}

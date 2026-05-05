@@ -7,6 +7,8 @@ interface ModalProps {
   onConfirm?: (value?: string) => void;
   title: string;
   message: string;
+  itemTitle?: string;
+  posterUrl?: string;
   type?: 'info' | 'confirm' | 'prompt' | 'danger';
   defaultValue?: string;
   placeholder?: string;
@@ -18,6 +20,8 @@ const Modal: React.FC<ModalProps> = ({
   onConfirm,
   title,
   message,
+  itemTitle,
+  posterUrl,
   type = 'info',
   defaultValue = '',
   placeholder = ''
@@ -56,6 +60,13 @@ const Modal: React.FC<ModalProps> = ({
         
         <div className={styles.content}>
           <p className={styles.message}>{message}</p>
+          
+          {(itemTitle || posterUrl) && (
+            <div className={styles.itemPreview}>
+              {posterUrl && <img src={posterUrl} alt="" className={styles.previewPoster} />}
+              {itemTitle && <h4 className={styles.previewTitle}>{itemTitle}</h4>}
+            </div>
+          )}
           
           {type === 'prompt' && (
             <div className={styles.inputWrapper}>
