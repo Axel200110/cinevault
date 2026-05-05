@@ -212,6 +212,30 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
+  gap: 20px;
+}
+
+.manageSearchWrapper {
+  flex: 1;
+  max-width: 400px;
+}
+
+.adminSearchInput {
+  width: 100%;
+  padding: 10px 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: white;
+  font-size: 0.9rem;
+  transition: 0.3s;
+}
+
+.adminSearchInput:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 15px rgba(229, 9, 20, 0.2);
 }
 
 .cardHeaderWithAction .cardTitle {
@@ -1732,6 +1756,16 @@
 
   .setupOptions {
     width: 100%;
+  }
+
+  .cardHeaderWithAction {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+
+  .manageSearchWrapper {
+    max-width: 100%;
   }
 }
 

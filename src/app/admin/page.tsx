@@ -65,7 +65,8 @@ export default function AdminPage() {
   const [editLink, setEditLink] = useState('');
   const [editType, setEditType] = useState('movie');
 
-  // Settings State
+  // Search/Filter State
+  const [manageSearch, setManageSearch] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [siteName, setSiteName] = useState('CineVault');
   const [showPreviews, setShowPreviews] = useState(true);
@@ -206,9 +207,14 @@ export default function AdminPage() {
       .limit(moviesLimit);
 
     if (data) {
-      const enriched = await fetchTitlesForAnalytics(data);
-      setMovies(enriched);
+      // 1. Set raw movies first so the UI responds immediately
+      setMovies(data);
       if (count !== null) setTotalMoviesCount(count);
+
+      // 2. Enrich with TMDb metadata in the background
+      fetchTitlesForAnalytics(data).then(enriched => {
+        setMovies(enriched);
+      });
 
       // Fetch movie/tv stats separately for accuracy
       const { count: mCount } = await supabase.from('movies').select('*', { count: 'exact', head: true }).eq('type', 'movie');
@@ -588,7 +594,18 @@ export default function AdminPage() {
 
           {activeTab === 'manage' && (
             <div className={styles.card}>
-              <h2 className={styles.cardTitle}>📂 Managed Library</h2>
+              <div className={styles.cardHeaderWithAction}>
+                <h2 className={styles.cardTitle}>📂 Managed Library</h2>
+                <div className={styles.manageSearchWrapper}>
+                  <input 
+                    type="text" 
+                    placeholder="Search by title or TMDB ID..." 
+                    className={styles.adminSearchInput}
+                    value={manageSearch}
+                    onChange={(e) => setManageSearch(e.target.value)}
+                  />
+                </div>
+              </div>
               <div className={styles.tableWrapper}>
                 <table className={styles.table}>
                   <thead>
@@ -602,7 +619,26 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {movies.map((movie) => (
+                    {(() => {
+                      const filtered = movies.filter(m => 
+                        !manageSearch || 
+                        (m.title?.toLowerCase().includes(manageSearch.toLowerCase())) ||
+                        (m.tmdb_id.includes(manageSearch))
+                      );
+                      
+                      if (filtered.length === 0 && manageSearch) {
+                        return (
+                          <tr>
+                            <td colSpan={6} style={{ textAlign: 'center', padding: '60px', opacity: 0.6 }}>
+                              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🔍</div>
+                              <p style={{ fontWeight: 600 }}>No titles match "{manageSearch}"</p>
+                              <p style={{ fontSize: '0.85rem', marginTop: '5px' }}>Try searching by TMDb ID or wait for titles to load.</p>
+                            </td>
+                          </tr>
+                        );
+                      }
+                      
+                      return filtered.map((movie) => (
                       <React.Fragment key={movie.id}>
                         {editingId === movie.id ? (
                           <tr className={styles.editingRow}>
@@ -699,7 +735,7 @@ export default function AdminPage() {
                           </tr>
                         )}
                       </React.Fragment>
-                    ))}
+                    )) })()}
                   </tbody>
                 </table>
               </div>

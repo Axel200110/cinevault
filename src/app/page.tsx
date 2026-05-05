@@ -8,46 +8,46 @@ import Link from "next/link";
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
-  // Fetch movie IDs and links from Supabase
-  let { data: movieSources, error } = await supabase
+  // 1. Fetch Most Popular (Mixed Content)
+  const { data: popularSources } = await supabase
     .from('movies')
     .select('*')
-    .order('clicks', { ascending: false });
+    .order('clicks', { ascending: false })
+    .limit(10);
 
-  // Fallback if 'clicks' column doesn't exist yet
-  if (error) {
-    console.warn('Click analytics column not found, falling back to date sort.');
-    const { data: fallbackData, error: fallbackError } = await supabase
-      .from('movies')
-      .select('*')
-      .order('created_at', { ascending: false });
+  // 2. Fetch Latest Movies
+  const { data: movieSources } = await supabase
+    .from('movies')
+    .select('*')
+    .eq('type', 'movie')
+    .order('created_at', { ascending: false })
+    .limit(14);
 
-    movieSources = fallbackData;
-    if (fallbackError) console.error('Error fetching from Supabase:', fallbackError);
-  }
+  // 3. Fetch Latest Series
+  const { data: seriesSources } = await supabase
+    .from('movies')
+    .select('*')
+    .eq('type', 'tv')
+    .order('created_at', { ascending: false })
+    .limit(14);
 
-  // Fetch all movie details from TMDb in parallel
-  const moviePromises = (movieSources || []).map(source =>
-    getMovieDetails(source.tmdb_id, source.terabox_link, source.type as 'movie' | 'tv')
-  );
+  // Fetch all details in parallel for each section
+  const [popularDetails, movieDetails, seriesDetails] = await Promise.all([
+    Promise.all((popularSources || []).map(s => getMovieDetails(s.tmdb_id, s.terabox_link, s.type as 'movie' | 'tv'))),
+    Promise.all((movieSources || []).map(s => getMovieDetails(s.tmdb_id, s.terabox_link, 'movie'))),
+    Promise.all((seriesSources || []).map(s => getMovieDetails(s.tmdb_id, s.terabox_link, 'tv')))
+  ]);
 
-  const allMovieDetails = await Promise.all(moviePromises);
-  const allContent = allMovieDetails.filter((m): m is MovieDetails => m !== null);
+  const popular = popularDetails.filter((m): m is MovieDetails => m !== null).slice(0, 7);
+  const movieShowcase = movieDetails.filter((m): m is MovieDetails => m !== null);
+  const tvShowcase = seriesDetails.filter((m): m is MovieDetails => m !== null).slice(0, 7);
 
-  // Categorize content
-  const movies = allContent.filter(c => c.type === 'movie');
-  const series = allContent.filter(c => c.type === 'tv');
+  // Extra logic for top lists (still using a mix or separate fetches if needed, but let's keep it simple for now)
+  const topMovies = [...movieShowcase].sort((a, b) => b.rating - a.rating).slice(0, 10);
+  const topTV = [...tvShowcase].sort((a, b) => b.rating - a.rating).slice(0, 10);
+
   const trending = await getTrending();
   const upcoming = await getUpcoming();
-
-  // Get top rated for the lists
-  const topMovies = [...movies].sort((a, b) => b.rating - a.rating).slice(0, 10);
-  const topTV = [...series].sort((a, b) => b.rating - a.rating).slice(0, 10);
-
-  // Most Popular
-  const popular = allContent.slice(0, 7);
-  const movieShowcase = movies.slice(0, 14);
-  const tvShowcase = series.slice(0, 7);
 
   // Professional Static Hero Backdrop (Migration 2023)
   const heroBackdrop = "https://image.tmdb.org/t/p/original/gklkxY0veMajdCiGe6ggsh07VG2.jpg";
@@ -152,9 +152,9 @@ export default async function Home() {
         <section id="library" className={styles.pageContent}>
           <div className={styles.sectionHeader}>
             <div className={styles.sectionHeaderTop}>
-              <h2 className={styles.sectionTitle}>All Movies</h2>
+              <h2 className={styles.sectionTitle}>✨ Recently Added</h2>
               <Link href="/movies" className={styles.viewAllBtn}>
-                View All Movies
+                View All 
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
               </Link>
             </div>
@@ -169,7 +169,7 @@ export default async function Home() {
             <div className={styles.sectionHeaderTop}>
               <h2 className={styles.sectionTitle}>TV Shows</h2>
               <Link href="/series" className={styles.viewAllBtn}>
-                View All Shows
+                View All 
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
               </Link>
             </div>
